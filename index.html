@@ -1,0 +1,1917 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dairy MLT Builder v6.5</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{--navy:#082444;--orange:#f28c28;--ink:#172033;--muted:#6b7280;--line:#d9dee7;--bg:#f5f7fa;--good:#0f7b49;--bad:#b42318;--soft:#f8fafc}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
+.wrap{max-width:1320px;margin:0 auto;padding:28px 20px 48px}
+.header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:22px}
+h1{margin:0;color:var(--navy);font-size:29px}.version{font-size:13px;color:var(--muted);font-weight:700}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(9,30,66,.06);margin-bottom:18px}
+.instructions{line-height:1.55}.instructions strong{color:var(--navy)}
+.sale-name-wrap{margin-bottom:16px}.sale-name-wrap label,.field label{display:block;font-weight:800;color:var(--navy);margin-bottom:7px}
+.sale-name-input,.field input{width:100%;border:1px solid var(--line);border-radius:8px;padding:11px 12px;font-size:14px;color:var(--ink);background:#fff}
+.sale-name-input{max-width:620px}.sale-name-input:focus,.field input:focus{outline:2px solid var(--orange);border-color:transparent}
+.filename-preview{margin-top:7px;font-size:12px;color:var(--muted)}
+.defaults{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0 16px;max-width:760px}
+.export-options{display:flex;align-items:center;gap:9px;margin:0 0 16px;font-size:13px;font-weight:700;color:var(--navy)}
+.export-options input{width:17px;height:17px;accent-color:var(--navy);cursor:pointer}
+.export-options label{cursor:pointer}
+
+.drop{border:2px dashed #aab4c3;border-radius:12px;padding:28px;text-align:center;background:#fbfcfe;transition:.15s}.drop.drag{border-color:var(--orange);background:#fff8ef}.drop input{display:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:8px;padding:11px 18px;font-weight:700;cursor:pointer;font-size:14px}.btn-primary{background:var(--navy);color:#fff}.btn-orange{background:var(--orange);color:#111827}.btn-green{background:#16794b;color:#fff}.btn-danger{background:#fff;color:#b42318;border:1px solid #f0b4ae}.btn:disabled{opacity:.45;cursor:not-allowed}
+.file-name{margin-top:10px;font-weight:700;color:var(--navy)}.small{font-size:13px;color:var(--muted)}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px}.status{margin-left:auto;font-size:13px;font-weight:700}.ok{color:var(--good)}.err{color:var(--bad)}.warn{color:#b45309}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}.stat{border:1px solid var(--line);border-radius:9px;padding:12px}.stat .n{font-size:24px;font-weight:800;color:var(--navy)}.stat .l{font-size:12px;color:var(--muted);margin-top:2px}
+.note{border-left:4px solid var(--orange);padding:9px 12px;background:#fff7ed;border-radius:5px;font-size:13px;line-height:1.45}
+.column-warning{display:none;margin:10px 0 4px;border-left:4px solid var(--bad);padding:11px 13px;background:#fff1f0;border-radius:6px;font-size:13px;line-height:1.5;color:#7a271a}
+.column-warning strong{color:var(--bad)}
+.column-warning .column-list{margin-top:5px;font-weight:800;color:var(--ink)}
+
+.mapping-box{display:none;margin-top:14px;border:1px solid #d9e2ec;border-radius:9px;padding:14px;background:#f8fafc}
+.mapping-box h3{margin:0 0 6px;color:var(--navy);font-size:15px}
+.mapping-list{margin-top:10px}
+.mapping-row{display:grid;grid-template-columns:minmax(150px,1fr) minmax(190px,1.2fr) minmax(150px,1fr) minmax(180px,1.15fr);gap:8px;align-items:center;padding:8px 0;border-top:1px solid #e4eaf0}
+.mapping-row:first-child{border-top:0}
+.mapping-row select,.mapping-row input{width:100%;font:inherit;padding:7px;border:1px solid #becbda;border-radius:5px;background:#fff}
+.mapping-source{font-weight:750;overflow-wrap:anywhere}
+.mapping-custom{display:contents}
+.mapping-custom.is-hidden input,.mapping-custom.is-hidden select{visibility:hidden;pointer-events:none}
+.mapping-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
+.supp-section{margin-top:16px;border:1px solid var(--line);border-radius:10px;padding:16px;background:#fff}
+.supp-section h2{margin:0 0 8px;font-size:18px;color:var(--navy)}
+.supp-upload-row{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-top:12px}
+.supp-upload-row .grow{flex:1;min-width:240px}
+.supp-upload-row input[type=file]{display:block}
+.supp-status{margin-top:10px;font-size:12px;color:var(--muted);font-weight:700}
+.supp-review{display:none;margin-top:13px}
+.supp-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.supp-item{border:1px solid #dae4ec;border-radius:7px;padding:12px;margin:10px 0;background:#fff}
+.supp-item h3{margin:0 0 8px;font-size:14px;color:var(--navy)}
+.supp-change{display:grid;grid-template-columns:145px minmax(130px,1fr) 24px minmax(150px,1fr);gap:8px;align-items:center;padding:6px 0;border-top:1px solid #edf1f5;font-size:12px}
+.supp-change.supp-ignored{opacity:.48}
+.supp-change textarea{box-sizing:border-box;width:100%;height:58px;resize:none;font:inherit;line-height:1.35;padding:6px 8px;border:1px solid #bdcedc;border-radius:5px;background:#fff}
+.supp-old{color:#8b4050;overflow-wrap:anywhere}.supp-new{color:#08634c;min-width:0}.supp-arrow{text-align:center}
+.supp-checks{display:flex;align-items:center;gap:6px;font-weight:600}
+.supp-checks input,.supp-group-check{width:auto!important}
+@media(max-width:760px){.mapping-row{grid-template-columns:1fr}.mapping-custom{display:grid;grid-template-columns:1fr;gap:8px}.mapping-custom.is-hidden{display:none}.supp-change{grid-template-columns:1fr 1fr}.supp-change>strong{grid-column:1/-1}.supp-arrow{display:none}}
+
+.link-upload{margin-top:16px;border:1px solid var(--line);border-radius:10px;padding:16px;background:var(--soft)}
+.link-upload-head{font-weight:800;color:var(--navy);margin-bottom:5px}
+.link-upload-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:11px}
+.link-file-name{font-size:12px;color:var(--muted);font-weight:700}
+.link-status{display:none;margin-top:12px;padding:10px 12px;border-radius:7px;background:#f0f9f4;border:1px solid #b7dfc8;font-size:13px;line-height:1.45}
+.link-status.warnbox{background:#fff7ed;border-color:#fed7aa}
+.link-review{display:none;margin-top:12px;overflow-x:auto}
+.link-review table{width:100%;border-collapse:collapse;font-size:12px;background:#fff}
+.link-review th,.link-review td{border:1px solid var(--line);padding:7px;text-align:left;vertical-align:top}
+.link-review th{background:#eef2f7;color:var(--navy);font-weight:800}
+.link-review .btn{padding:6px 10px;font-size:11px}
+#linkFileInput{display:none}
+#linkFileBtn.disabled{opacity:.45;cursor:not-allowed}
+.nextlot-description .pedigree-actions-summary,.edit-description .pedigree-actions-summary{display:block!important;border:0!important;background:transparent!important;padding:0!important;margin:5px 0 9px!important;white-space:normal!important;list-style:none!important;list-style-type:none!important;font-size:0!important;line-height:0!important}
+.nextlot-description summary.pedigree-actions-summary::-webkit-details-marker,.edit-description summary.pedigree-actions-summary::-webkit-details-marker{display:none!important}
+.nextlot-description summary.pedigree-actions-summary::marker,.edit-description summary.pedigree-actions-summary::marker{content:""!important}
+.nextlot-description .pedigree-toggle-label,.edit-description .pedigree-toggle-label{display:inline-block!important;vertical-align:middle!important;margin:0 9px 0 0!important;padding:7px 13px!important;border:1px solid #123c5b!important;border-radius:999px!important;background:#fff!important;color:#123c5b!important;font-size:13px!important;line-height:1.25!important;font-weight:400!important;white-space:nowrap!important}
+.nextlot-description .pedigree-abv-link,.edit-description .pedigree-abv-link{display:inline-block!important;vertical-align:middle!important;margin:0!important;padding:7px 13px!important;border:1px solid #00364b!important;border-radius:999px!important;background:#00364b!important;color:#fff!important;text-decoration:none!important;font-size:13px!important;line-height:1.25!important;font-weight:600!important;white-space:nowrap!important}
+.nextlot-description .pedigree-link-wrap,.edit-description .pedigree-link-wrap{display:block!important;margin:5px 0 9px!important}
+
+.preview-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}.preview-toggle{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.mode-hidden{display:none!important}
+.nextlot-preview{display:grid;gap:18px}.nextlot-card{background:#fff;border:1px solid #d5d9df;border-radius:3px;padding:18px 19px 20px;color:#001f4d}.nextlot-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.nextlot-edit-btn{flex:0 0 auto;padding:7px 12px;font-size:11px}.nextlot-lotno{font-size:15px;font-weight:400;margin-bottom:18px}.nextlot-lotno strong{font-size:15px}.nextlot-title{font-size:17px;font-weight:800;line-height:1.35;margin-bottom:20px;color:#001f4d}.nextlot-description{font-size:13px;line-height:1.5;color:#001f4d;overflow-x:auto}.nextlot-description p{margin:0 0 12px}.nextlot-description strong{font-weight:800}.nextlot-description .trait-group{margin:0 0 14px}.nextlot-description .trait-group-title{font-size:12px;font-weight:800;margin:0 0 6px;color:#082444}.nextlot-description .trait-table-width{width:58.333333%;max-width:620px}.nextlot-description .table-responsive{display:block;width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 0 14px;vertical-align:top}.nextlot-description table.table{border-collapse:collapse;margin:0;width:100%!important;min-width:0!important;max-width:100%;background:#fff;display:table}.nextlot-description table.table th,.nextlot-description table.table td{border:1px solid #cfd6df;padding:5px 9px;white-space:nowrap;text-align:left}.nextlot-description table.table th{background:#e4e4e4;color:#111827;font-size:12px;font-weight:800}.nextlot-description table.table td{font-size:12px}.nextlot-description table.table-striped tbody tr:nth-child(even){background:#f8fafc}.nextlot-description table.table-hover tbody tr:hover{background:#f5f7fa}
+.nextlot-meta{margin-top:14px;padding-top:10px;border-top:1px solid #e5e7eb;display:flex;gap:18px;flex-wrap:wrap;font-size:10px;color:#6b7280}
+.export-spacer{background:#fff;border-top:1px dashed #e3e7eb}
+.nextlot-description details{margin:0 0 12px}.nextlot-description summary.btn{list-style:none;display:inline-flex;margin:0 0 8px;cursor:pointer}.nextlot-description summary.btn::-webkit-details-marker{display:none}.nextlot-description details p{margin:2px 0 10px}
+
+.table-wrap{overflow:auto;max-height:570px;border:1px solid var(--line);border-radius:9px}table.edit-table{width:100%;border-collapse:collapse;font-size:11px;background:#fff;table-layout:fixed;min-width:1120px}table.edit-table th{position:sticky;top:0;background:var(--navy);color:#fff;text-align:left;padding:7px;z-index:1}table.edit-table td{border-top:1px solid #e8ebf0;padding:6px;vertical-align:top}.edit-field{width:100%;border:1px solid transparent;border-radius:5px;padding:5px 6px;background:transparent;font:inherit;color:inherit}.edit-field:hover{border-color:#cbd5e1;background:#f8fafc}.edit-field:focus{outline:2px solid var(--orange);border-color:transparent;background:#fff}.edit-description{width:100%;min-height:150px;border:1px solid #d7dde6;border-radius:7px;padding:10px;background:#fff;color:#001f4d;font-size:12px;line-height:1.5;overflow-x:auto}
+.edit-description:hover{border-color:#aeb8c6;background:#fbfcfe}
+.edit-description:focus{outline:2px solid var(--orange);border-color:transparent;background:#fff}
+.edit-description p{margin:0 0 12px}.edit-description strong{font-weight:800}
+.edit-description .trait-group{margin:0 0 14px}
+.edit-description .trait-table-width{width:100%;max-width:100%}
+.edit-description .table-responsive{display:block;width:100%;max-width:100%;overflow-x:auto;margin:0 0 12px}
+.edit-description table.table{border-collapse:collapse;margin:0;width:100%!important;background:#fff}
+.edit-description table.table th,.edit-description table.table td{border:1px solid #cfd6df;padding:5px 7px;white-space:nowrap;text-align:left}
+.edit-description table.table th{background:#e4e4e4;color:#111827;font-size:11px;font-weight:800}
+.edit-description table.table td{font-size:11px;color:#111827}
+.edit-description details{margin:0 0 12px}.edit-description summary.btn{list-style:none;display:inline-flex;margin:0 0 8px;cursor:pointer}
+.edit-description summary.btn::-webkit-details-marker{display:none}
+#editPreview th:nth-child(1),#editPreview td:nth-child(1){width:58px}#editPreview th:nth-child(2),#editPreview td:nth-child(2){width:170px}#editPreview th:nth-child(3),#editPreview td:nth-child(3){width:650px}#editPreview th:nth-child(4),#editPreview td:nth-child(4){width:74px}#editPreview th:nth-child(5),#editPreview td:nth-child(5){width:95px}#editPreview th:nth-child(6),#editPreview td:nth-child(6){width:95px}
+#editPreview tr.edit-target td{background:#fff7ed}
+@media(max-width:760px){.stats{grid-template-columns:1fr 1fr}.defaults{grid-template-columns:1fr}.header{align-items:flex-start;flex-direction:column}.status{width:100%;margin-left:0}.nextlot-description .trait-table-width{width:100%;max-width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div><h1>Dairy MLT Builder</h1><div class="small">Converts a dairy catalogue spreadsheet into a NextLot MLT upload file.</div></div>
+    <div class="version">v6.5</div>
+  </div>
+
+  <div class="card instructions">
+    <strong>Output columns:</strong> Lot #, Lot Name, Description, Quantity, Starting bid and Reserve Price.<br>    <strong>Vendor / A/C:</strong> use the checkbox to hide this line from the NextLot preview and downloaded MLT when required.<br>    <strong>Supplementary updates:</strong> upload an update sheet after the sale catalogue, compare only the changed nonblank fields, then accept or ignore each proposed update before applying it.<br>
+    <strong>Column mapping:</strong> unrecognised populated headings can be mapped to an existing Dairy field or created as a new field and positioned in the MLT. Mappings are saved in this browser for later files. The Current Mapping Excel export lists each MLT heading, where it displays, and every recognised or saved source-column variation underneath that MLT field.<br>
+    <strong>Herdbook links:</strong> after the catalogue is loaded, upload a Herdbook link file to add a <strong>Pedigree &amp; ABV Link</strong> button to matching lots. Exact Herdbook matches are cross-checked against Animal Name. Missing/different names or review statuses are flagged <strong>To Check</strong>; these can be confirmed individually or all at once before the link is added.<br>
+    <strong>Lot Name</strong> uses the source Name column when present. Older files without Name continue to use Tag + animal ID followed by Type. The description includes Vendor, Class, Attribute, Herdbook, DOB, Ltrs/Day, Total Ltrs, Calving Date, Joining, Calved, Due and Mated Sire. Lot Notes appear above the pedigree with a blank row above and below. Only Sire and Dam show initially; any additional Sire or Dam generations are available under the Pedigree button. Tables remain below the pedigree. Breed is currently hidden. A2/A2 and Polled are extracted from Class, while Beta-Casein and Horn values are also shown under Attribute. Calving Date appears in the lot details directly below DOB; a heading of Calved also appears in the lot details. Production Age, Days, Milk, Fat, Fat %, Pro, Pro % and Solids are combined into one production table. Production Age is kept as a numeric year-month code (for example 2-4 or 2-11), even when Excel displays the uploaded value as 2-Apr or 2-Nov. All displayed dates — including DOB/Birth Date, Calving Date, Calved, Joining and Due — are shown as DD/MM/YYYY and are never displayed month-first.<br>
+    Rows are sorted into Lot # order before preview and export. Blank/non-animal rows are ignored. If a future file has no lot-number column, output lot numbers are created sequentially. Like the Beef MLT Builder, descriptions are automatically padded to a minimum of 8 visible rows. Only the missing blank rows are added at the bottom, and descriptions already at 8 or more rows are left unchanged.
+  </div>
+
+  <div class="card">
+    <div class="sale-name-wrap">
+      <label for="saleName">Sale Name</label>
+      <input id="saleName" class="sale-name-input" type="text" placeholder="Enter sale name">
+      <div id="filenamePreview" class="filename-preview">Output file: NextLot MLT.xlsx</div>
+    </div>
+
+    <div class="defaults">
+      <div class="field"><label for="defaultQty">Default Quantity</label><input id="defaultQty" type="number" min="1" step="1" value="1"></div>
+      <div class="field"><label for="defaultStart">Default Starting bid</label><input id="defaultStart" type="number" min="0" step="0.01" placeholder="Blank"></div>
+      <div class="field"><label for="defaultReserve">Default Reserve Price</label><input id="defaultReserve" type="number" min="0" step="0.01" placeholder="Blank"></div>
+    </div>
+
+    <div class="export-options">
+      <input id="hideVendor" type="checkbox">
+      <label for="hideVendor">Hide Vendor / A/C in MLT export</label>
+    </div>
+
+    <div id="drop" class="drop">
+      <div style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:6px">Upload Dairy Sale Catalogue File</div>
+      <div class="small">CSV, XLSX or XLS — reads animal details, breeding details, Last Lact Age (Months), Last Lact Milk, Last Lact Protein, Last Lact Fat, Last Lact Days, SCC, BPI, ASI, HWI, GLPI, OT, MS, Mam, Fert and standard production fields including F&PPI. Ltrs/Day, Total Ltrs, CC/Cell Count, Solids and SC are shown together in a separate table above the production table. The production table keeps Age, Milk, Fat, Fat %, Pro and Pro % together, followed by Days, F&PPI and Solids. Any populated column that is not recognised will be flagged after upload so it can be mapped.</div>
+      <div style="margin-top:15px"><label class="btn btn-primary" for="fileInput">Choose file</label></div>
+      <input id="fileInput" type="file" accept=".csv,.xlsx,.xls">
+      <div id="fileName" class="file-name"></div>
+    </div>
+
+    <div id="originalMappingPanel" class="mapping-box">
+      <h3>Unrecognised catalogue column mapping</h3>
+      <div class="small">Map an unrecognised heading to an existing Dairy field, ignore it, or create a new MLT field and choose where it should appear. Use <strong>Download Current Mapping Excel</strong> to export the full mapping register, including all recognised header variations and any mappings you add.</div>
+      <div id="columnWarning" class="column-warning"></div>
+      <div id="originalMappingRows" class="mapping-list"></div>
+      <div class="mapping-actions">
+        <button type="button" id="applyOriginalMappings" class="btn btn-primary">Apply &amp; Save Mappings</button>
+        <button type="button" id="downloadMappingWorkbook" class="btn">Download Current Mapping Excel</button>
+      </div>
+    </div>
+
+    <div class="supp-section">
+      <h2>2. Supplementary sheet updates</h2>
+      <div class="small">First upload the sale catalogue above. Then upload a supplementary CSV or Excel file containing updates to some lots. Blank supplementary cells are ignored. Compare the proposed changes, edit values if needed, and accept or ignore them before applying.</div>
+      <div class="supp-upload-row">
+        <div class="grow">
+          <label for="suppFileInput">Supplementary CSV or Excel</label>
+          <input id="suppFileInput" type="file" accept=".csv,.xlsx,.xls" disabled>
+        </div>
+        <button type="button" id="compareSuppBtn" class="btn" disabled>Compare supplementary</button>
+      </div>
+      <div id="suppFileName" class="file-name"></div>
+      <div id="suppStatus" class="supp-status">No supplementary file loaded.</div>
+
+      <div id="suppMappingPanel" class="mapping-box">
+        <h3>Supplementary column mapping</h3>
+        <div class="small">Map new headings before comparing. New custom fields can be placed directly into the chosen section of the MLT.</div>
+        <div id="suppMappingRows" class="mapping-list"></div>
+        <div class="mapping-actions">
+          <button type="button" id="applySuppMappings" class="btn btn-primary">Apply &amp; Save Mappings</button>
+        </div>
+      </div>
+
+      <div id="suppReview" class="supp-review">
+        <div class="supp-actions">
+          <button type="button" id="suppAcceptAll" class="btn">Accept all field changes</button>
+          <button type="button" id="suppIgnoreAll" class="btn">Ignore all</button>
+          <button type="button" id="suppApply" class="btn btn-green">Apply selected updates</button>
+        </div>
+        <div id="suppItems"></div>
+      </div>
+    </div>
+
+    <div class="link-upload">
+      <div class="link-upload-head">3. Upload Herdbook Link File</div>
+      <div class="small">Upload a CSV, XLSX or XLS containing Herdbook/Herdbook Number and an Animal Registry Link or other pedigree/ABV link. The builder matches links to the catalogue by Herdbook number and cross-checks Animal Name where supplied.</div>
+      <div class="link-upload-row">
+        <label id="linkFileBtn" class="btn btn-primary disabled" for="linkFileInput">Choose Herdbook Link File</label>
+        <input id="linkFileInput" type="file" accept=".csv,.xlsx,.xls" disabled>
+        <div id="linkFileName" class="link-file-name"></div>
+      </div>
+      <div id="linkStatus" class="link-status"></div>
+      <div id="linkReview" class="link-review"></div>
+    </div>
+
+    <div class="toolbar">
+      <button id="applyDefaultsBtn" class="btn" disabled>Apply Defaults to All Lots</button>
+      <button id="downloadBtn" class="btn btn-orange" disabled>Download NextLot MLT</button>
+      <button id="clearBtn" class="btn" disabled>Clear</button>
+      <div id="status" class="status"></div>
+    </div>
+
+    <div id="stats" class="stats" style="display:none">
+      <div class="stat"><div id="sourceCount" class="n">0</div><div class="l">Source lots</div></div>
+      <div class="stat"><div id="outputCount" class="n">0</div><div class="l">Output lots</div></div>
+      <div class="stat"><div id="ignoredCount" class="n">0</div><div class="l">Ignored non-lot rows</div></div>
+      <div class="stat"><div id="startLot" class="n">-</div><div class="l">First output lot</div></div>
+    </div>
+
+    <div class="note" style="margin-top:16px">
+      <strong>Description layout:</strong> Lot details → pedigree → production table → other dairy tables. Pipe-separated production values create an additional row for the same animal.
+    </div>
+  </div>
+
+  <div id="previewCard" class="card" style="display:none">
+    <div class="preview-head">
+      <div>
+        <div id="previewTitle" style="font-weight:800;color:var(--navy);font-size:18px">NextLot Preview</div>
+        <div id="previewHelp" class="small">This shows how the lot title and description will appear in NextLot. Use Edit Lot on any lot to jump straight to that row.</div>
+      </div>
+      <div class="preview-toggle">
+        <button id="editPreviewBtn" class="btn btn-primary">Edit Lots</button>
+        <button id="saveChangesBtn" class="btn btn-green mode-hidden" disabled>Save Changes</button>
+        <button id="undoChangeBtn" class="btn btn-danger mode-hidden" disabled>Undo Change</button>
+        <button id="cancelEditBtn" class="btn mode-hidden">Cancel Editing</button>
+      </div>
+    </div>
+
+    <div id="nextLotPreview" class="nextlot-preview"></div>
+
+    <div id="editPreview" class="table-wrap mode-hidden">
+      <table class="edit-table">
+        <thead><tr><th>Lot #</th><th>Lot Name</th><th>Description</th><th>Quantity</th><th>Starting bid</th><th>Reserve Price</th></tr></thead>
+        <tbody id="previewBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+const el=id=>document.getElementById(id);
+const drop=el('drop'), input=el('fileInput'), linkInput=el('linkFileInput'), suppInput=el('suppFileInput');
+let outputRows=[], draftRows=[], editHistory=[], sourceRows=[];
+let isEditingPreview=false;
+let herdbookLinkMap=new Map();
+let confirmedHerdbookLinks=new Set();
+let currentParsed=null;
+let supplementaryParsed=null;
+let supplementaryDiffs=[];
+const DAIRY_MAPPING_STORAGE_KEY='stocklive-dairy-column-mappings-v1';
+function readSavedColumnMappings(){
+  try{
+    const value=JSON.parse(localStorage.getItem(DAIRY_MAPPING_STORAGE_KEY)||'{}');
+    return value&&typeof value==='object'&&!Array.isArray(value)?value:{};
+  }catch(e){return {};}
+}
+let userColumnMappings=readSavedColumnMappings();
+function saveColumnMappings(){
+  try{localStorage.setItem(DAIRY_MAPPING_STORAGE_KEY,JSON.stringify(userColumnMappings));return true;}
+  catch(e){return false;}
+}
+
+const aliases={
+  LOT:['LOT','LOT NO','LOT #','LOT NUMBER','LOTNO'],
+  NAME:['NAME','LOT NAME','ANIMAL NAME'],
+  ID:['ID','TAG','ANIMAL ID','COW ID','COW NO','COW NUMBER'],
+  VID:['VID','VISUAL ID','VISUAL IDENT','VISUAL IDENTIFIER'],
+  DOB:['DOB','DATE OF BIRTH','BIRTH DATE'],
+  SIRE:['SIRE'],
+  DAM:['DAM'],
+  SECOND_DAM:['2ND DAM','SECOND DAM'],
+  THIRD_DAM:['3RD DAM','THIRD DAM'],
+  BREED:['BREED'],
+  CLASS:['CLASS','CLASS / ATTRIBUTES','CLASS/ATTRIBUTES'],
+  VENDOR:['VENDOR','A/C','A/C NAME','ACCOUNT','ACCOUNT NAME'],
+  LOT_NOTES:['LOT NOTES','LOT NOTE','NOTES','COMMENTS'],
+  HERDBOOK:['HERDBOOK','HERD BOOK'],
+  JOINING:['JOINING','JOINED','JOINING DATE'],
+  DUE:['DUE','DUE DATE'],
+  CALVING_DATE:['CALVING DATE'],
+  CALVED:['CALVED','DATE CALVED'],
+  LTRS_DAY:['LTRS/DAY','LTRS / DAY','LTRS DAY','LITRES/DAY','LITRES / DAY','LITRES DAY','LITERS/DAY','LITERS / DAY'],
+  TOTAL_LTRS:['TOTAL LTRS','TOTAL LITRES','TOTAL LITERS','LTRS TO DATE','LITRES TO DATE','LITERS TO DATE'],
+  SC:['SC','S.C.'],
+  PRODUCTION_AGE:['PRODUCTION AGE','PROD AGE'],
+  DAYS:['DAYS','DAYS IN MILK','DIM','DAYS MILKING','MILKING DAYS'],
+  MILK:['MILK'],
+  LITRES:['LITRES','LITERS','MILK LITRES','MILK LITERS'],
+  KGS_PROT:['KGS PROT','KG PROT','KGS PROTEIN','KG PROTEIN','PROTEIN KG','PROTEIN KGS','PROT KGS','KGS PROT.','PRO'],
+  PCT_P:['%P','% P','P%','PROTEIN %','PROTEIN PERCENT','PERCENT PROTEIN','PROTEIN PCT','% PROT','PROT %','PRO %'],
+  KGS_FAT:['KGS FAT','KG FAT','FAT KGS','FAT KG','KGS FAT.','FAT'],
+  PCT_F:['%F','% F','F%','FAT %','FAT PERCENT','PERCENT FAT','FAT PCT'],
+  SOLIDS:['SOLIDS','TOTAL SOLIDS','MILK SOLIDS','KGS SOLIDS','KG SOLIDS'],
+  PRODUCTION_SOLIDS:['PRODUCTION SOLIDS','PRODUCTION SOLID'],
+  BETA_CASEIN:['BETA-CASEIN','BETA CASEIN','BETA CASEIN A2','BETA-CASEIN A2'],
+  HORN:['HORN','HORN STATUS'],
+  CELL_COUNT:['CELL COUNT','CELLCOUNT','CC'],
+  SCC:['SCC'],
+  LAST_LACT_AGE_MONTHS:['LAST LACT AGE (MONTHS)','LAST LACT AGE MONTHS'],
+  LAST_LACT_MILK:['LAST LACT MILK'],
+  LAST_LACT_PROTEIN:['LAST LACT PROTEIN'],
+  LAST_LACT_FAT:['LAST LACT FAT'],
+  LAST_LACT_DAYS:['LAST LACT DAYS'],
+  BPI:['BPI'],
+  ASI:['ASI'],
+  HWI:['HWI'],
+  GLPI:['GLPI'],
+  FPPI:['F&PPI','F & PPI','F+PPI','F + PPI'],
+  OT:['OT'],
+  MS:['MS'],
+  MAM:['MAM','MAMMARY'],
+  FERT:['FERT','FERTILITY'],
+  PREG_STATUS:['PREG STATUS','PREGNANCY STATUS','PREG STATUS.'],
+  WIC:['WIC','WEEKS IN CALF'],
+  MATED_SIRE:['MATED SIRE','MATED TO','JOINED TO','SERVICE SIRE'],
+  TYPE:['TYPE','ANIMAL TYPE']
+};
+
+const KNOWN_FIELD_LABELS={
+  LOT:'Lot #',NAME:'Name / Lot Name',ID:'Animal ID',VID:'VID',DOB:'DOB',SIRE:'Sire',DAM:'Dam',
+  SECOND_DAM:'2nd Dam',THIRD_DAM:'3rd Dam',BREED:'Breed',CLASS:'Class / Attributes',VENDOR:'Vendor / A/C',
+  LOT_NOTES:'Lot Notes',HERDBOOK:'Herdbook',JOINING:'Joining',DUE:'Due',CALVING_DATE:'Calving Date',
+  CALVED:'Calved',LTRS_DAY:'Ltrs/Day',TOTAL_LTRS:'Total Ltrs',SC:'SC',PRODUCTION_AGE:'Production Age',
+  DAYS:'Days',MILK:'Milk',LITRES:'Litres',KGS_PROT:'Pro',PCT_P:'Pro %',KGS_FAT:'Fat',PCT_F:'Fat %',
+  SOLIDS:'Solids',PRODUCTION_SOLIDS:'Production Solids',BETA_CASEIN:'Beta-Casein',HORN:'Horn',
+  CELL_COUNT:'CC / Cell Count',SCC:'SCC',LAST_LACT_AGE_MONTHS:'Last Lact Age (Months)',
+  LAST_LACT_MILK:'Last Lact Milk',LAST_LACT_PROTEIN:'Last Lact Protein',LAST_LACT_FAT:'Last Lact Fat',
+  LAST_LACT_DAYS:'Last Lact Days',BPI:'BPI',ASI:'ASI',HWI:'HWI',GLPI:'GLPI',FPPI:'F&PPI',
+  OT:'OT',MS:'MS',MAM:'Mam',FERT:'Fert',PREG_STATUS:'Preg Status',WIC:'WIC',
+  MATED_SIRE:'Mated Sire',TYPE:'Type'
+};
+const CUSTOM_PLACEMENTS=[
+  ['DETAIL_TOP','Details — top'],
+  ['DETAIL_AFTER_HERDBOOK','Details — after Herdbook'],
+  ['DETAIL_BOTTOM','Details — bottom'],
+  ['TOP_TABLE','Ltrs/Day table — end'],
+  ['PRODUCTION_TABLE','Age / production table — end'],
+  ['PREG_TABLE','Preg Status / WIC table — end'],
+  ['LAST_LACT_TABLE','Last Lact table — end'],
+  ['INDEX_TABLE','BPI / HWI table — end']
+];
+function directAliasKey(header){
+  const h=normalizeHeader(header);
+  if(!h)return '';
+  for(const key of Object.keys(aliases)){
+    if(aliasSet(key).has(h))return key;
+  }
+  return '';
+}
+function customKeyForHeader(header){
+  return 'CUSTOM:'+normalizeHeader(header);
+}
+function mappingForHeader(header){
+  return userColumnMappings[normalizeHeader(header)]||null;
+}
+function canonicalKeyForHeader(header){
+  const direct=directAliasKey(header);
+  if(direct)return direct;
+  const m=mappingForHeader(header);
+  if(!m||m.type==='ignore')return '';
+  return m.key||'';
+}
+function headerMapsTo(header,key){
+  return canonicalKeyForHeader(header)===key;
+}
+function fieldLabelForKey(key){
+  if(KNOWN_FIELD_LABELS[key])return KNOWN_FIELD_LABELS[key];
+  const m=Object.values(userColumnMappings).find(x=>x&&x.key===key);
+  return m?.label||key.replace(/^CUSTOM:/,'');
+}
+function customFieldsForPlacement(row,placement){
+  const fields=[];
+  const seen=new Set();
+  for(const [normHeader,m] of Object.entries(userColumnMappings)){
+    if(!m||m.type!=='custom'||m.placement!==placement||!m.key||seen.has(m.key))continue;
+    const value=getVal(row,m.key);
+    if(value!==''){
+      fields.push([m.label||m.sourceHeader||normHeader,m.key]);
+      seen.add(m.key);
+    }
+  }
+  return fields;
+}
+function mappingOptionsHtml(selected=''){
+  const options=['<option value="">Select mapping…</option>','<option value="__IGNORE__">Ignore this column</option>','<option value="__CUSTOM__">Create new MLT field…</option>'];
+  Object.entries(KNOWN_FIELD_LABELS).forEach(([key,label])=>{
+    options.push('<option value="'+escAttr(key)+'" '+(selected===key?'selected':'')+'>'+escText(label)+'</option>');
+  });
+  return options.join('');
+}
+function placementOptionsHtml(selected='DETAIL_BOTTOM'){
+  return CUSTOM_PLACEMENTS.map(([key,label])=>'<option value="'+escAttr(key)+'" '+(selected===key?'selected':'')+'>'+escText(label)+'</option>').join('');
+}
+function unrecognisedHeadersForRows(headers,rows){
+  const out=[],seen=new Set();
+  for(const header of headers||[]){
+    const h=clean(header);if(!h||isRecognisedSourceHeader(h))continue;
+    if(!(rows||[]).some(row=>clean(row[h])!==''))continue;
+    const n=normalizeHeader(h);if(seen.has(n))continue;seen.add(n);out.push(h);
+  }
+  return out;
+}
+function renderMappingPanel(headers,rows,panelId,rowsId){
+  const panel=el(panelId),wrap=el(rowsId);
+  if(!panel||!wrap)return;
+  const unknown=unrecognisedHeadersForRows(headers,rows);
+  if(!unknown.length){panel.style.display='none';wrap.innerHTML='';return;}
+  wrap.innerHTML=unknown.map((header,i)=>{
+    const existing=mappingForHeader(header);
+    const selected=existing?(existing.type==='custom'?'__CUSTOM__':existing.type==='ignore'?'__IGNORE__':existing.key):'';
+    const label=existing?.label||header;
+    const placement=existing?.placement||'DETAIL_BOTTOM';
+    const hide=selected==='__CUSTOM__'?'':' is-hidden';
+    return '<div class="mapping-row" data-map-row="'+i+'" data-map-header="'+escAttr(header)+'">'+
+      '<div class="mapping-source">'+escText(header)+'</div>'+
+      '<select class="mapping-destination">'+mappingOptionsHtml(selected)+'</select>'+
+      '<div class="mapping-custom'+hide+'"><input class="mapping-label" value="'+escAttr(label)+'" placeholder="New field label">'+
+      '<select class="mapping-placement">'+placementOptionsHtml(placement)+'</select></div>'+
+      '</div>';
+  }).join('');
+  wrap.querySelectorAll('.mapping-destination').forEach(sel=>{
+    sel.addEventListener('change',()=>{
+      const row=sel.closest('.mapping-row'),custom=row.querySelector('.mapping-custom');
+      custom.classList.toggle('is-hidden',sel.value!=='__CUSTOM__');
+    });
+  });
+  panel.style.display='block';
+}
+function standardPlacementForKey(key){
+  if(['LOT','NAME','ID','TYPE','BREED'].includes(key))return 'Source / lot identification';
+  if(['VENDOR','CLASS','GLPI','VID','HERDBOOK','DOB','CALVING_DATE','JOINING','CALVED','DUE','MATED_SIRE','BETA_CASEIN','HORN'].includes(key))return 'Lot details';
+  if(['SIRE','DAM','SECOND_DAM','THIRD_DAM'].includes(key))return 'Pedigree';
+  if(['LTRS_DAY','TOTAL_LTRS','CELL_COUNT','SOLIDS','SC'].includes(key))return 'Ltrs/Day table';
+  if(['PRODUCTION_AGE','MILK','KGS_PROT','PCT_P','KGS_FAT','PCT_F','DAYS','FPPI','PRODUCTION_SOLIDS'].includes(key))return 'Age / production table';
+  if(['PREG_STATUS','WIC'].includes(key))return 'Preg Status / WIC table';
+  if(['LAST_LACT_AGE_MONTHS','LAST_LACT_MILK','LAST_LACT_PROTEIN','LAST_LACT_FAT','LAST_LACT_DAYS'].includes(key))return 'Last Lact table';
+  if(['BPI','ASI','HWI','SCC','OT','MS','MAM','FERT'].includes(key))return 'BPI / HWI table';
+  if(key==='LITRES')return 'Older Calving Date files — Litres table';
+  if(key==='LOT_NOTES')return 'Lot Notes';
+  return 'Other / recognised source field';
+}
+function placementLabel(key){
+  return (CUSTOM_PLACEMENTS.find(([k])=>k===key)||[])[1]||key;
+}
+function currentMappingReportRows(){
+  const grouped=new Map();
+
+  // Built-in Dairy mappings: one row per MLT destination with every recognised
+  // source-heading variation shown together.
+  Object.entries(aliases).forEach(([key,headers])=>{
+    const label=fieldLabelForKey(key);
+    grouped.set('BUILTIN:'+key,{
+      mltHeading:label,
+      displayedAt:standardPlacementForKey(key),
+      sourceHeaders:[...headers],
+      mappingType:'Built-in',
+      backendKey:key
+    });
+  });
+
+  // Saved mappings include both remaps to existing fields and custom fields.
+  Object.entries(userColumnMappings).forEach(([normalized,m])=>{
+    if(!m)return;
+    if(m.type==='ignore'){
+      grouped.set('IGNORED:'+normalized,{
+        mltHeading:'Ignored',
+        displayedAt:'Not included in MLT',
+        sourceHeaders:[m.sourceHeader||normalized],
+        mappingType:'Saved — ignored',
+        backendKey:''
+      });
+      return;
+    }
+
+    if(m.type==='known'){
+      const key='BUILTIN:'+m.key;
+      if(!grouped.has(key)){
+        grouped.set(key,{
+          mltHeading:fieldLabelForKey(m.key),
+          displayedAt:standardPlacementForKey(m.key),
+          sourceHeaders:[],
+          mappingType:'Saved mapping',
+          backendKey:m.key
+        });
+      }
+      const row=grouped.get(key);
+      if(m.sourceHeader&&!row.sourceHeaders.some(h=>normalizeHeader(h)===normalizeHeader(m.sourceHeader)))row.sourceHeaders.push(m.sourceHeader);
+      if(row.mappingType==='Built-in')row.mappingType='Built-in + saved aliases';
+      return;
+    }
+
+    if(m.type==='custom'){
+      const key='CUSTOM:'+m.key;
+      if(!grouped.has(key)){
+        grouped.set(key,{
+          mltHeading:m.label||m.sourceHeader||normalized,
+          displayedAt:placementLabel(m.placement||'DETAIL_BOTTOM'),
+          sourceHeaders:[],
+          mappingType:'Custom',
+          backendKey:m.key
+        });
+      }
+      const row=grouped.get(key);
+      const source=m.sourceHeader||normalized;
+      if(source&&!row.sourceHeaders.some(h=>normalizeHeader(h)===normalizeHeader(source)))row.sourceHeaders.push(source);
+    }
+  });
+
+  return [...grouped.values()]
+    .map(row=>({
+      ...row,
+      sourceHeaders:[...row.sourceHeaders].sort((a,b)=>String(a).localeCompare(String(b),undefined,{sensitivity:'base'}))
+    }))
+    .sort((a,b)=>{
+      const p=String(a.displayedAt).localeCompare(String(b.displayedAt),undefined,{sensitivity:'base'});
+      return p||String(a.mltHeading).localeCompare(String(b.mltHeading),undefined,{sensitivity:'base'});
+    });
+}
+function downloadCurrentMappingWorkbook(){
+  if(!window.XLSX){
+    alert('Excel library is not available.');
+    return;
+  }
+
+  const rows=currentMappingReportRows();
+  const data=[
+    ['MLT Heading','Displayed In MLT','Recognised / Variable Source Column Headers','Mapping Type','Backend Key'],
+    ...rows.map(r=>[
+      r.mltHeading,
+      r.displayedAt,
+      r.sourceHeaders.join(' | '),
+      r.mappingType,
+      r.backendKey
+    ])
+  ];
+
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  ws['!cols']=[
+    {wch:28},
+    {wch:34},
+    {wch:85},
+    {wch:25},
+    {wch:28}
+  ];
+  ws['!autofilter']={ref:'A1:E'+data.length};
+
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Current Mapping');
+
+  const customRows=rows.filter(r=>r.mappingType==='Custom'||r.mappingType==='Saved — ignored'||r.mappingType==='Saved mapping');
+  if(customRows.length){
+    const customData=[
+      ['MLT Heading','Displayed In MLT','Source Column Header(s)','Mapping Type','Backend Key'],
+      ...customRows.map(r=>[r.mltHeading,r.displayedAt,r.sourceHeaders.join(' | '),r.mappingType,r.backendKey])
+    ];
+    const cws=XLSX.utils.aoa_to_sheet(customData);
+    cws['!cols']=[{wch:28},{wch:34},{wch:70},{wch:25},{wch:28}];
+    XLSX.utils.book_append_sheet(wb,cws,'Saved Custom Mappings');
+  }
+
+  const sale=clean(el('saleName')?.value);
+  const file=(sale?sale.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim()+' - ':'')+'Dairy MLT Current Mapping.xlsx';
+  XLSX.writeFile(wb,file,{compression:true});
+}
+
+function collectMappings(rowsId){
+  const wrap=el(rowsId);if(!wrap)return 0;
+  let count=0;
+  wrap.querySelectorAll('.mapping-row').forEach(row=>{
+    const header=row.dataset.mapHeader;
+    const normalized=normalizeHeader(header);
+    const destination=row.querySelector('.mapping-destination').value;
+    if(!destination)return;
+    if(destination==='__IGNORE__'){
+      userColumnMappings[normalized]={type:'ignore',key:'',sourceHeader:header};
+    }else if(destination==='__CUSTOM__'){
+      const label=clean(row.querySelector('.mapping-label').value)||header;
+      const placement=row.querySelector('.mapping-placement').value||'DETAIL_BOTTOM';
+      userColumnMappings[normalized]={type:'custom',key:customKeyForHeader(header),label,placement,sourceHeader:header};
+    }else{
+      userColumnMappings[normalized]={type:'known',key:destination,label:fieldLabelForKey(destination),sourceHeader:header};
+    }
+    count++;
+  });
+  saveColumnMappings();
+  return count;
+}
+
+function clean(v){return v===null||v===undefined?'':String(v).trim();}
+function escText(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\r\n|\r|\n/g,'<br>');}
+
+function escAttr(v){
+  return String(v??'')
+    .replace(/&/g,'&amp;')
+    .replace(/"/g,'&quot;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;');
+}
+function normalizeHerdbook(v){
+  return clean(v).toUpperCase().replace(/[\s\-]+/g,'');
+}
+function normalizeAnimalName(v){
+  return clean(v).toUpperCase().replace(/[^A-Z0-9]+/g,' ').replace(/\s+/g,' ').trim();
+}
+function safeHttpUrl(v){
+  const s=clean(v);
+  if(!s)return '';
+  try{
+    const u=new URL(s);
+    return (u.protocol==='https:'||u.protocol==='http:')?u.href:'';
+  }catch(e){return '';}
+}
+function stripHerdbookLink(raw){
+  const doc=new DOMParser().parseFromString('<div id="herdbook-strip-root">'+String(raw??'')+'</div>','text/html');
+  const root=doc.getElementById('herdbook-strip-root');
+  root.querySelectorAll('a.pedigree-abv-link,.breedlogic-link').forEach(node=>{
+    if(node.classList.contains('breedlogic-link'))node.remove();
+    else node.remove();
+  });
+  root.querySelectorAll('.pedigree-link-wrap').forEach(wrap=>{
+    if(!clean(wrap.textContent))wrap.remove();
+  });
+  return root.innerHTML;
+}
+function herdbookLinkAnchor(url){
+  const safe=safeHttpUrl(url);
+  if(!safe)return '';
+  return '<a class="btn btn-primary btn-sm rounded-pill px-3 py-2 pedigree-abv-link" href="'+escAttr(safe)+'" target="_blank" rel="noopener noreferrer" contenteditable="false" style="display:inline-block!important;vertical-align:middle!important;margin:0!important;padding:7px 13px!important;border:1px solid #00364b!important;border-radius:999px!important;background:#00364b!important;color:#fff!important;text-decoration:none!important;font-size:13px!important;line-height:1.25!important;font-weight:600!important;white-space:nowrap!important">Pedigree &amp; ABV Link</a>';
+}
+function insertHerdbookLink(raw,url){
+  const cleanHtml=stripHerdbookLink(raw);
+  const safe=safeHttpUrl(url);
+  if(!safe)return cleanHtml;
+
+  const doc=new DOMParser().parseFromString('<div id="herdbook-link-root">'+cleanHtml+'</div>','text/html');
+  const root=doc.getElementById('herdbook-link-root');
+  const linkHtml=herdbookLinkAnchor(safe);
+
+  const summary=root.querySelector('summary.pedigree-actions-summary');
+  if(summary){
+    // Match the Beef pattern: both controls live inside one SUMMARY so the
+    // expanded pedigree always opens below the row of buttons.
+    summary.insertAdjacentHTML('beforeend',' '+linkHtml);
+  }else{
+    // Some animals have no extra pedigree generations, so there is no Pedigree
+    // toggle. Keep the ABV link available on its own line in that case.
+    const wrap=doc.createElement('div');
+    wrap.className='pedigree-link-wrap';
+    wrap.setAttribute('style','display:block!important;margin:5px 0 9px!important');
+    wrap.innerHTML=linkHtml;
+    const firstTable=root.querySelector('table,.trait-group');
+    if(firstTable){
+      const anchor=firstTable.closest('.trait-group')||firstTable;
+      anchor.before(wrap);
+    }else{
+      root.append(wrap);
+    }
+  }
+
+  return root.innerHTML;
+}
+function linkRowMatch(row){
+  const herdbook=normalizeHerdbook(row.__herdbook);
+  if(!herdbook)return {state:'no-herdbook'};
+  const entry=herdbookLinkMap.get(herdbook);
+  if(!entry)return {state:'no-link',herdbook};
+
+  if(confirmedHerdbookLinks.has(herdbook)){
+    return {state:'matched',herdbook,entry,confirmed:true};
+  }
+
+  const catalogueRaw=clean(row.__animalName||row['Lot Name']);
+  const linkRaw=clean(entry.animalName);
+  const catalogueName=normalizeAnimalName(catalogueRaw);
+  const linkName=normalizeAnimalName(linkRaw);
+  const statusNeedsReview=/to\s*check|needs?\s*review|review|mismatch|multiple|unmatched|not\s*matched/i.test(clean(entry.status));
+
+  let reason='';
+  if(!catalogueName || !linkName)reason='Animal name missing from one of the files';
+  else if(catalogueName!==linkName)reason='Animal name differs';
+  else if(statusNeedsReview)reason='Link file status indicates review';
+
+  if(reason){
+    return {state:'check',herdbook,entry,catalogueName:catalogueRaw,reason};
+  }
+  return {state:'matched',herdbook,entry};
+}
+function applyHerdbookLinks(){
+  outputRows=outputRows.map(row=>{
+    const next={...row,Description:stripHerdbookLink(row.Description)};
+    const match=linkRowMatch(next);
+    if(match.state==='matched')next.Description=insertHerdbookLink(next.Description,match.entry.url);
+    return next;
+  });
+  draftRows=cloneRows(outputRows);
+  if(outputRows.length){
+    renderNextLotPreview(outputRows);
+    renderEditPreview(draftRows);
+  }
+  renderHerdbookLinkStatus();
+}
+function renderHerdbookLinkStatus(){
+  const status=el('linkStatus'), review=el('linkReview');
+  if(!status||!review)return;
+
+  if(!herdbookLinkMap.size){
+    status.style.display='none';
+    status.innerHTML='';
+    review.style.display='none';
+    review.innerHTML='';
+    return;
+  }
+
+  let matched=0,toCheck=0,noLink=0,noHerdbook=0;
+  const checks=[];
+
+  outputRows.forEach((row,rowIndex)=>{
+    const m=linkRowMatch(row);
+    if(m.state==='matched')matched++;
+    else if(m.state==='check'){toCheck++;checks.push({row,rowIndex,...m});}
+    else if(m.state==='no-link')noLink++;
+    else if(m.state==='no-herdbook')noHerdbook++;
+  });
+
+  status.className='link-status'+(toCheck?' warnbox':'');
+  status.style.display='block';
+  status.innerHTML=
+    '<strong>Herdbook links:</strong> '+matched+' matched'+
+    (toCheck?' | <strong>'+toCheck+' flagged To Check</strong>':'')+
+    (noLink?' | '+noLink+' catalogue lots with no link':'')+
+    (noHerdbook?' | '+noHerdbook+' lots with no Herdbook number':'')+'.';
+
+  if(!checks.length){
+    review.style.display='none';
+    review.innerHTML='';
+    return;
+  }
+
+  const rows=checks.map(item=>{
+    const entry=item.entry;
+    return '<tr>'+
+      '<td>'+escText(item.row['Lot #']??'')+'</td>'+
+      '<td>'+escText(item.row.__herdbook??'')+'</td>'+
+      '<td>'+escText(item.row.__animalName||item.row['Lot Name']||'')+'</td>'+
+      '<td>'+escText(entry.animalName||'')+'</td>'+
+      '<td><strong style="color:#b45309">To Check</strong><br>'+escText(item.reason||'Review match')+'</td>'+
+      '<td><button type="button" class="btn btn-primary" data-confirm-herdbook="'+escAttr(item.herdbook)+'">Confirm</button></td>'+
+      '</tr>';
+  }).join('');
+
+  review.innerHTML=
+    '<div class="link-upload-row" style="justify-content:space-between;margin:0 0 8px">'+
+      '<div class="small"><strong>Flagged To Check:</strong> review these where possible. A link is not added until the row is confirmed.</div>'+
+      '<button type="button" class="btn btn-primary" id="confirmAllHerdbookLinks">Confirm All To Check</button>'+
+    '</div>'+
+    '<table><thead><tr><th>Lot</th><th>Herdbook</th><th>Catalogue Name</th><th>Link File Name</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
+  review.style.display='block';
+
+  review.querySelectorAll('[data-confirm-herdbook]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      confirmedHerdbookLinks.add(btn.dataset.confirmHerdbook);
+      applyHerdbookLinks();
+    });
+  });
+
+  const confirmAll=review.querySelector('#confirmAllHerdbookLinks');
+  if(confirmAll){
+    confirmAll.addEventListener('click',()=>{
+      checks.forEach(item=>confirmedHerdbookLinks.add(item.herdbook));
+      applyHerdbookLinks();
+    });
+  }
+}
+function resetHerdbookLinks(){
+  herdbookLinkMap=new Map();
+  confirmedHerdbookLinks=new Set();
+  if(linkInput)linkInput.value='';
+  if(el('linkFileName'))el('linkFileName').textContent='';
+  renderHerdbookLinkStatus();
+}
+function linkHeaderIndex(headers,candidates){
+  const wanted=new Set(candidates.map(normalizeHeader));
+  return headers.findIndex(h=>wanted.has(normalizeHeader(h)));
+}
+function parseHerdbookLinkSheet(ws){
+  const aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+  let headerRow=-1, indices=null, headers=[];
+
+  for(let r=0;r<Math.min(aoa.length,30);r++){
+    const h=(aoa[r]||[]).map(v=>clean(v));
+    const hi=linkHeaderIndex(h,['Herdbook Number','Herdbook','Herd Book','Identifier','Animal Identifier','Registration Number']);
+    const ui=linkHeaderIndex(h,['Animal Registry Link','Registry Link','Animal Link','Pedigree & ABV Link','Pedigree and ABV Link','ABV Data Link','Pedigree & EBV Data Link','Pedigree and EBV Data Link','EBV Data Link','Pedigree Link','Link','URL']);
+    if(hi>=0&&ui>=0){
+      headerRow=r;headers=h;
+      indices={
+        herdbook:hi,
+        url:ui,
+        animalName:linkHeaderIndex(h,['Animal Name','Name','Lot Name']),
+        status:linkHeaderIndex(h,['Match Status','Status'])
+      };
+      break;
+    }
+  }
+
+  if(headerRow<0)return null;
+
+  const rows=[];
+  for(let r=headerRow+1;r<aoa.length;r++){
+    const arr=aoa[r]||[];
+    const herdbook=clean(arr[indices.herdbook]??'');
+    const url=safeHttpUrl(arr[indices.url]??'');
+    if(!herdbook||!url)continue;
+    rows.push({
+      herdbook,
+      animalName:indices.animalName>=0?clean(arr[indices.animalName]??''):'',
+      url,
+      status:indices.status>=0?clean(arr[indices.status]??''):''
+    });
+  }
+  return rows;
+}
+async function handleHerdbookLinkFile(file){
+  if(!file)return;
+  if(!outputRows.length){
+    el('status').textContent='Upload the dairy catalogue first, then upload the Herdbook link file.';
+    el('status').className='status warn';
+    return;
+  }
+  if(isEditingPreview||editHistory.length){
+    el('status').textContent='Save or cancel the current lot edits before adding Herdbook links.';
+    el('status').className='status warn';
+    linkInput.value='';
+    return;
+  }
+
+  try{
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array',raw:false,cellDates:false});
+    let rows=[];
+    for(const sheetName of wb.SheetNames){
+      const parsed=parseHerdbookLinkSheet(wb.Sheets[sheetName]);
+      if(parsed&&parsed.length){rows=parsed;break;}
+    }
+    if(!rows.length)throw new Error('No Herdbook + Animal Registry Link (or other supported animal link) columns were found in the link file.');
+
+    const map=new Map();
+    const duplicates=new Set();
+    rows.forEach(entry=>{
+      const key=normalizeHerdbook(entry.herdbook);
+      if(!key)return;
+      if(map.has(key))duplicates.add(key);
+      else map.set(key,entry);
+    });
+    duplicates.forEach(key=>map.delete(key));
+
+    herdbookLinkMap=map;
+    confirmedHerdbookLinks=new Set();
+    el('linkFileName').textContent=file.name+' — '+map.size+' unique links';
+    applyHerdbookLinks();
+
+    if(duplicates.size){
+      el('linkStatus').className='link-status warnbox';
+      el('linkStatus').style.display='block';
+      el('linkStatus').innerHTML += ' <strong>'+duplicates.size+' duplicate Herdbook number(s) were not matched automatically.</strong>';
+    }
+
+    el('status').textContent='Herdbook link file loaded — '+map.size+' unique links available for matching.';
+    el('status').className='status ok';
+  }catch(e){
+    resetHerdbookLinks();
+    el('linkFileName').textContent=file.name;
+    el('linkStatus').className='link-status warnbox';
+    el('linkStatus').style.display='block';
+    el('linkStatus').textContent=e.message||'Could not read the Herdbook link file.';
+  }
+}
+function safeNum(v){const s=clean(v); if(!s)return null; const n=Number(s.replace(/[$,\s]/g,'')); return Number.isFinite(n)?n:null;}
+function numOrBlank(v){const n=safeNum(v);return n===null?'':n;}
+function cloneRows(rows){return rows.map(r=>({...r}));}
+function sanitizeFileName(value){return String(value??'').trim().replace(/[<>:"/\\|?*\x00-\x1F]/g,'').replace(/\s+/g,' ').replace(/[. ]+$/g,'');}
+function getOutputFileBase(){const sale=sanitizeFileName(el('saleName').value);const count=outputRows.length||draftRows.length||0;return sale?(sale+' ('+count+' Lots) MLT Upload'):(count?'NextLot MLT ('+count+' Lots)':'NextLot MLT');}
+function updateFilenamePreview(){el('filenamePreview').textContent='Output file: '+getOutputFileBase()+'.xlsx';}
+function normalizeHeader(v){return clean(v).toUpperCase().replace(/[_\-]+/g,' ').replace(/[.]+$/g,'').replace(/\s+/g,' ');}
+function formatDateFull(value){
+  const s=clean(value);
+  if(!s)return '';
+
+  // Excel serial date.
+  if(/^\d+(?:\.\d+)?$/.test(s)){
+    const n=Number(s);
+    if(Number.isFinite(n) && n>20000 && n<100000){
+      const parts=XLSX.SSF.parse_date_code(n);
+      if(parts)return dobDateParts(parts.d,parts.m,parts.y)||s;
+    }
+  }
+
+  // ISO / year-first dates.
+  let m=s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})(?:[ T].*)?$/);
+  if(m)return dobDateParts(m[3],m[2],m[1])||s;
+
+  // Day/month/year. If SheetJS/Excel has already rendered an unambiguous
+  // US month/day date (e.g. 2/13/2023), swap it back to DD/MM/YYYY.
+  m=s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2}|\d{4})(?:[ T].*)?$/);
+  if(m){
+    const first=Number(m[1]), second=Number(m[2]);
+    const year=m[3].length===2?(Number(m[3])<50?2000:1900)+Number(m[3]):Number(m[3]);
+    let day=first, month=second;
+    if(second>12 && first<=12){
+      day=second;
+      month=first;
+    }
+    return dobDateParts(day,month,year)||s;
+  }
+
+  return s;
+}
+function aliasSet(key){return new Set((aliases[key]||[key]).map(normalizeHeader));}
+function headerHas(headers,key){return headers.some(h=>headerMapsTo(h,key));}
+
+function isRecognisedSourceHeader(header){
+  const h=normalizeHeader(header);
+  if(!h)return true;
+  if(canonicalKeyForHeader(header))return true;
+  if(mappingForHeader(header)?.type==='ignore')return true;
+  if(pedigreeGenerationFromHeader(h,'Sire') || pedigreeGenerationFromHeader(h,'Dam'))return true;
+  return false;
+}
+
+function unrecognisedSourceHeaders(parsed){
+  if(!parsed || !Array.isArray(parsed.headers))return [];
+  const lotRows=parsed.rows.filter(isAnimalRow);
+  const seen=new Set();
+  const out=[];
+
+  parsed.headers.forEach(header=>{
+    const h=clean(header);
+    if(!h || isRecognisedSourceHeader(h))return;
+
+    const hasData=lotRows.some(row=>clean(row[h])!=='');
+    if(!hasData)return;
+
+    const key=normalizeHeader(h);
+    if(seen.has(key))return;
+    seen.add(key);
+    out.push(h);
+  });
+
+  return out;
+}
+
+function showColumnWarning(headers){
+  const box=el('columnWarning');
+  if(!box)return;
+
+  if(!headers || !headers.length){
+    box.style.display='none';
+    box.innerHTML='';
+    return;
+  }
+
+  box.innerHTML=
+    '<strong>Unrecognised catalogue columns found.</strong> '+
+    'Use the mapping section above to map these to an existing Dairy field, ignore them, or create a new MLT field and choose its position.'+
+    '<div class="column-list">'+headers.map(h=>escText(h)).join(', ')+'</div>';
+  box.style.display='block';
+}
+function getVal(row,key){
+  const keys=Object.keys(row).filter(k=>k!=='__row');
+  const direct=keys.find(k=>directAliasKey(k)===key);
+  if(direct!==undefined)return clean(row[direct]);
+  const mapped=keys.find(k=>canonicalKeyForHeader(k)===key);
+  return mapped!==undefined?clean(row[mapped]):'';
+}
+
+function getVendorEntry(row){
+  const wanted=aliasSet('VENDOR');
+  const hit=Object.keys(row).find(k=>wanted.has(normalizeHeader(k)));
+  if(!hit)return {label:'Vendor',value:''};
+  const h=normalizeHeader(hit);
+  const label=(h==='A/C' || h==='A/C NAME' || h==='ACCOUNT' || h==='ACCOUNT NAME')?'A/C':'Vendor';
+  return {label,value:clean(row[hit])};
+}
+
+function stripVendorAccountLine(raw){
+  if(!el('hideVendor') || !el('hideVendor').checked)return String(raw??'');
+  let s=String(raw??'');
+  s=s.replace(/<strong>(?:Vendor|A\/C):<\/strong>\s*[^<]*(?:<br>)?/i,'');
+  s=s.replace(/<p>\s*<\/p>/gi,'');
+  return s;
+}
+function findHeaderRow(rows){
+  let best=-1,bestScore=-1;
+  for(let i=0;i<Math.min(rows.length,30);i++){
+    const h=(rows[i]||[]).map(normalizeHeader);
+    let score=0;
+    (rows[i]||[]).forEach(x=>{if(canonicalKeyForHeader(x))score++;});
+    if(score>bestScore){bestScore=score;best=i;}
+  }
+  return bestScore>=4?best:-1;
+}
+// Do not rely on formatted Excel date text for DOB: that text can be
+// month/day/year even when the underlying date is correct. Read the original
+// numeric Excel date serial and format its actual day/month/year components.
+function dobDateParts(day,month,year){
+  const d=Number(day),m=Number(month),y=Number(year);
+  if(!Number.isInteger(d)||!Number.isInteger(m)||!Number.isInteger(y)||y<1900||y>9999)return '';
+  const date=new Date(Date.UTC(y,m-1,d));
+  if(date.getUTCFullYear()!==y||date.getUTCMonth()!==m-1||date.getUTCDate()!==d)return '';
+  return String(d).padStart(2,'0')+'/'+String(m).padStart(2,'0')+'/'+String(y).padStart(4,'0');
+}
+function normalizeDobText(value){return formatDateFull(value);}
+function dateFromCell(cell,displayed,date1904){
+  if(cell&&cell.t==='n'&&typeof cell.v==='number'&&cell.v>20000&&cell.v<100000){
+    const parts=XLSX.SSF.parse_date_code(cell.v,{date1904:!!date1904});
+    if(parts){
+      const formatted=dobDateParts(parts.d,parts.m,parts.y);
+      if(formatted)return formatted;
+    }
+  }
+  if(cell&&cell.t==='d'&&cell.v instanceof Date&&!Number.isNaN(cell.v.getTime())){
+    return dobDateParts(cell.v.getUTCDate(),cell.v.getUTCMonth()+1,cell.v.getUTCFullYear())||clean(displayed);
+  }
+  return formatDateFull(displayed);
+}
+function rowsFromSheet(ws,date1904=false){
+  const aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+  const headerIndex=findHeaderRow(aoa);
+  if(headerIndex<0)return null;
+  const headers=(aoa[headerIndex]||[]).map(v=>clean(v));
+
+  const dateHeaderKeys=['DOB','CALVING_DATE','CALVED','JOINING','DUE'];
+
+  const objs=[];
+  for(let r=headerIndex+1;r<aoa.length;r++){
+    const arr=aoa[r]||[], o={};
+    headers.forEach((h,c)=>{
+      if(!h)return;
+      const displayed=arr[c]??'';
+      const isDateHeader=dateHeaderKeys.some(key=>headerMapsTo(h,key));
+
+      if(isDateHeader){
+        const cell=ws[XLSX.utils.encode_cell({r,c})];
+        o[h]=dateFromCell(cell,displayed,date1904);
+      }else{
+        o[h]=displayed;
+      }
+    });
+    o.__row=r+1; objs.push(o);
+  }
+  return {rows:objs,headerIndex,headers,totalDataRows:Math.max(0,aoa.length-headerIndex-1)};
+}
+function rowsFromSupplementSheet(ws,date1904=false){
+  const aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+  let best=-1,bestScore=-1;
+  for(let r=0;r<Math.min(aoa.length,30);r++){
+    const row=aoa[r]||[];
+    const recognised=row.filter(h=>canonicalKeyForHeader(h)).length;
+    const hasMatchField=row.some(h=>['LOT','HERDBOOK','NAME','ID','VID'].includes(canonicalKeyForHeader(h)));
+    const nonblank=row.filter(v=>clean(v)!=='').length;
+    const score=(hasMatchField?100:0)+recognised*5+Math.min(nonblank,20);
+    if(score>bestScore){bestScore=score;best=r;}
+  }
+  if(best<0)return null;
+  const headers=(aoa[best]||[]).map(v=>clean(v));
+  if(!headers.some(h=>['LOT','HERDBOOK','NAME','ID','VID'].includes(canonicalKeyForHeader(h))))return null;
+
+  const dateHeaderKeys=['DOB','CALVING_DATE','CALVED','JOINING','DUE'];
+  const rows=[];
+  for(let r=best+1;r<aoa.length;r++){
+    const arr=aoa[r]||[],obj={};
+    headers.forEach((h,c)=>{
+      if(!h)return;
+      const displayed=arr[c]??'';
+      if(dateHeaderKeys.some(key=>headerMapsTo(h,key))){
+        const cell=ws[XLSX.utils.encode_cell({r,c})];
+        obj[h]=dateFromCell(cell,displayed,date1904);
+      }else obj[h]=displayed;
+    });
+    obj.__row=r+1;
+    if(Object.entries(obj).some(([k,v])=>k!=='__row'&&clean(v)!==''))rows.push(obj);
+  }
+  return {rows,headerIndex:best,headers,totalDataRows:rows.length};
+}
+function isAnimalRow(row){
+  const lot=getVal(row,'LOT'), name=getVal(row,'NAME'), id=getVal(row,'ID'), type=getVal(row,'TYPE'), breed=getVal(row,'BREED'), sire=getVal(row,'SIRE');
+  return !!(name || id || (lot && (type||breed||sire)));
+}
+function naturalLotCompare(a,b){
+  const av=clean(a['Lot #']), bv=clean(b['Lot #']);
+  return av.localeCompare(bv,undefined,{numeric:true,sensitivity:'base'});
+}
+function normalizeProductionAgeText(value){
+  const s=clean(value);
+  if(!s)return '';
+
+  const months={
+    JAN:1,JANUARY:1,
+    FEB:2,FEBRUARY:2,
+    MAR:3,MARCH:3,
+    APR:4,APRIL:4,
+    MAY:5,
+    JUN:6,JUNE:6,
+    JUL:7,JULY:7,
+    AUG:8,AUGUST:8,
+    SEP:9,SEPT:9,SEPTEMBER:9,
+    OCT:10,OCTOBER:10,
+    NOV:11,NOVEMBER:11,
+    DEC:12,DECEMBER:12
+  };
+
+  const normalisePart=part=>{
+    let p=clean(part);
+    if(!p)return '';
+
+    // Excel commonly turns age codes such as 2-5 or 2-11 into 2-May / 2-Nov.
+    // Convert only month-name values here; ordinary numeric age codes are left alone.
+    let m=p.match(/^(\d{1,2})\s*[-\/.\s]\s*([A-Za-z]+)$/);
+    if(m){
+      const month=months[m[2].toUpperCase()];
+      if(month)return Number(m[1])+'-'+month;
+    }
+
+    // Also handle the reversed display form if an Excel format renders May-2.
+    m=p.match(/^([A-Za-z]+)\s*[-\/.\s]\s*(\d{1,2})$/);
+    if(m){
+      const month=months[m[1].toUpperCase()];
+      if(month)return Number(m[2])+'-'+month;
+    }
+
+    return p;
+  };
+
+  return s.split('|').map(normalisePart).join(' | ');
+}
+function displayVal(row,key){
+  const v=getVal(row,key);
+  if(['DOB','CALVING_DATE','CALVED','JOINING','DUE'].includes(key)){
+    return formatDateFull(v);
+  }
+  if(key==='PRODUCTION_AGE')return normalizeProductionAgeText(v);
+  return v;
+}
+function classAndAttributes(row){
+  const raw=getVal(row,'CLASS');
+  const attributes=[];
+  let classText=raw || '';
+
+  if(/\bA2\s*\/\s*A2\b/i.test(classText)){
+    attributes.push('A2/A2');
+    classText=classText.replace(/\bA2\s*\/\s*A2\b/ig,' ');
+  }
+  if(/\bPOLLED\b/i.test(classText)){
+    attributes.push('Polled');
+    classText=classText.replace(/\bPOLLED\b/ig,' ');
+  }
+
+  const betaCasein=getVal(row,'BETA_CASEIN');
+  if(betaCasein)attributes.push(betaCasein);
+
+  const horn=getVal(row,'HORN');
+  if(horn)attributes.push(horn);
+
+  classText=classText.replace(/\s+/g,' ').replace(/^[\s,;|/-]+|[\s,;|/-]+$/g,'').trim();
+
+  // Prevent duplicates where the same attribute is supplied in more than one column.
+  const seen=new Set();
+  const uniqueAttributes=attributes.filter(v=>{
+    const key=clean(v).toLowerCase();
+    if(!key || seen.has(key))return false;
+    seen.add(key);
+    return true;
+  });
+
+  return {classText,attributes:uniqueAttributes};
+}
+
+function ordinalSuffix(n){
+  const mod100=n%100;
+  return (mod100>=11&&mod100<=13)?'th':({1:'st',2:'nd',3:'rd'}[n%10]||'th');
+}
+
+function pedigreeLabel(kind,n){
+  if(n===1)return kind;
+  return n+ordinalSuffix(n)+' '+kind;
+}
+
+function pedigreeGenerationFromHeader(header,kind){
+  const h=normalizeHeader(header);
+  const k=kind.toUpperCase();
+
+  if(h===k)return 1;
+
+  let m=h.match(new RegExp('^(\\d+)(?:ST|ND|RD|TH)?\\s+'+k+'$'));
+  if(m)return Number(m[1]);
+
+  m=h.match(new RegExp('^'+k+'\\s+(\\d+)$'));
+  if(m)return Number(m[1]);
+
+  const words={
+    SECOND:2,THIRD:3,FOURTH:4,FIFTH:5,SIXTH:6,
+    SEVENTH:7,EIGHTH:8,NINTH:9,TENTH:10
+  };
+  for(const [word,n] of Object.entries(words)){
+    if(h===word+' '+k)return n;
+  }
+  return 0;
+}
+
+function dynamicPedigreeFields(row,kind){
+  const found=[];
+  Object.keys(row).forEach(key=>{
+    if(key==='__row')return;
+    const generation=pedigreeGenerationFromHeader(key,kind);
+    if(!generation)return;
+    const value=clean(row[key]);
+    if(value)found.push({
+      generation,
+      label:pedigreeLabel(kind,generation),
+      value
+    });
+  });
+
+  found.sort((a,b)=>a.generation-b.generation);
+
+  const seen=new Set();
+  return found.filter(item=>{
+    if(seen.has(item.generation))return false;
+    seen.add(item.generation);
+    return true;
+  });
+}
+
+function pedigreeBlock(row){
+  const sires=dynamicPedigreeFields(row,'Sire');
+  const dams=dynamicPedigreeFields(row,'Dam');
+
+  const visible=[];
+  const firstSire=sires.find(x=>x.generation===1);
+  const firstDam=dams.find(x=>x.generation===1);
+  if(firstSire)visible.push('<strong>Sire:</strong> '+escText(firstSire.value));
+  if(firstDam)visible.push('<strong>Dam:</strong> '+escText(firstDam.value));
+
+  const extra=[...sires.filter(x=>x.generation>1),...dams.filter(x=>x.generation>1)]
+    .sort((a,b)=>a.generation-b.generation || (a.label.includes('Sire')?-1:1));
+
+  const visibleHtml=visible.length?'<p>'+visible.join('<br>')+'</p>':'';
+  if(!extra.length)return visibleHtml;
+
+  const extraHtml=extra.map(item=>
+    '<strong>'+escText(item.label)+':</strong> '+escText(item.value)
+  ).join('<br>');
+
+  return visibleHtml+
+    '<details class="pedigree-details"><summary class="pedigree-actions-summary" style="display:block!important;border:0!important;background:transparent!important;padding:0!important;margin:5px 0 9px!important;white-space:normal!important;list-style:none!important;list-style-type:none!important;font-size:0!important;line-height:0!important">'+
+    '<span class="btn btn-outline-primary btn-sm rounded-pill px-3 py-2 pedigree-toggle-label" style="display:inline-block!important;vertical-align:middle!important;margin:0 9px 0 0!important;padding:7px 13px!important;border:1px solid #123c5b!important;border-radius:999px!important;background:#fff!important;color:#123c5b!important;font-size:13px!important;line-height:1.25!important;font-weight:400!important;white-space:nowrap!important">Pedigree</span>'+
+    '</summary><p>'+extraHtml+'</p></details>';
+}
+
+function detailBlock(row){
+  const lines=[];
+  const classInfo=classAndAttributes(row);
+  const pushCustom=placement=>{
+    customFieldsForPlacement(row,placement).forEach(([label,key])=>{
+      const v=displayVal(row,key);
+      if(v)lines.push('<strong>'+escText(label)+':</strong> '+escText(v));
+    });
+  };
+
+  pushCustom('DETAIL_TOP');
+
+  const vendor=getVendorEntry(row);
+  if(vendor.value)lines.push('<strong>'+vendor.label+':</strong> '+escText(vendor.value));
+
+  if(classInfo.classText)lines.push('<strong>Class:</strong> '+escText(classInfo.classText));
+  if(classInfo.attributes.length)lines.push('<strong>Attribute:</strong> '+escText(classInfo.attributes.join(', ')));
+
+  const glpi=displayVal(row,'GLPI');
+  if(glpi)lines.push('<strong>GLPI:</strong> '+escText(glpi));
+
+  const fields=[
+    ['VID','VID'],
+    ['Herdbook','HERDBOOK'],
+    ['DOB','DOB'],
+    ['Calving Date','CALVING_DATE'],
+    ['Joining','JOINING'],
+    ['Calved','CALVED'],
+    ['Due','DUE'],
+    ['Mated Sire','MATED_SIRE']
+  ];
+
+  fields.forEach(([label,key])=>{
+    const v=displayVal(row,key);
+    if(v)lines.push('<strong>'+label+':</strong> '+escText(v));
+    if(key==='HERDBOOK')pushCustom('DETAIL_AFTER_HERDBOOK');
+  });
+
+  pushCustom('DETAIL_BOTTOM');
+
+  const notes=getVal(row,'LOT_NOTES');
+  let htmlOut=lines.length?'<p>'+lines.join('<br>')+'</p>':'';
+
+  if(notes){
+    htmlOut += '<p><br><strong>Lot Notes:</strong> '+escText(notes)+'<br><br></p>';
+  }
+  return htmlOut;
+}
+function horizontalTable(row,fields,retainHeadings=false){
+  const entries=fields.map(([label,key])=>[label,displayVal(row,key)]);
+  // Never display an entirely empty table. Where a group does have data,
+  // retain all its requested column headings even when an individual cell is blank.
+  if(!entries.some(([,v])=>v!==''))return '';
+  const shown=retainHeadings?entries:entries.filter(([,v])=>v!=='');
+  const headers=shown.map(([label])=>'<th>'+escText(label)+'</th>').join('');
+  const values=shown.map(([,value])=>'<td>'+escText(value)+'</td>').join('');
+  return '<div class="trait-group"><div class="trait-table-width col-12 col-lg-7 px-0"><div class="table-responsive"><table class="table table-sm table-striped table-bordered table-hover mb-3 w-100"><tbody><tr>'+headers+'</tr><tr>'+values+'</tr></tbody></table></div></div></div>';
+}
+function splitProductionValue(v){
+  let s=clean(v);
+  if(!s)return [];
+  // CSV exports can preserve Excel text formulas as ="2-2 | 3-5".
+  if(/^="[\s\S]*"$/.test(s))s=s.slice(2,-1);
+  return s.split('|').map(part=>clean(part));
+}
+function productionTable(row){
+  const fields=[
+    ['Age','PRODUCTION_AGE',false],
+    ['Milk','MILK',false],
+    ['Pro','KGS_PROT',false],
+    ['Pro %','PCT_P',false],
+    ['Fat','KGS_FAT',false],
+    ['Fat %','PCT_F',false],
+    ['Days','DAYS',false],
+    ['F&PPI','FPPI',false],
+    ['Solids','PRODUCTION_SOLIDS',false],
+    ...customFieldsForPlacement(row,'PRODUCTION_TABLE').map(([label,key])=>[label,key,false])
+  ];
+
+  const parsed=fields.map(([label,key,isStatic])=>({
+    label,key,isStatic,parts:splitProductionValue(displayVal(row,key))
+  }));
+  const maxRows=Math.max(0,...parsed.map(f=>f.parts.length));
+  if(!maxRows)return '';
+
+  // Only show production columns that contain at least one value.
+  const shown=parsed.filter(f=>f.parts.some(v=>v!==''));
+  if(!shown.length)return '';
+
+  const headers=shown.map(f=>'<th>'+escText(f.label)+'</th>').join('');
+  const rows=[];
+  for(let i=0;i<maxRows;i++){
+    const cells=shown.map(f=>{
+      let value='';
+      if(f.parts.length>1)value=f.parts[i]??'';
+      else if(f.parts.length===1)value=f.isStatic?f.parts[0]:(i===0?f.parts[0]:'');
+      return '<td>'+escText(value)+'</td>';
+    }).join('');
+    // Keep deliberately blank cells within a second production record,
+    // e.g. " | 305" in Days, provided another production field has row 2 data.
+    if(shown.some(f=>f.parts.length>i && (f.parts[i]??'')!==''))rows.push('<tr>'+cells+'</tr>');
+  }
+  if(!rows.length)return '';
+
+  return '<div class="trait-group"><div class="trait-table-width col-12 col-lg-7 px-0"><div class="table-responsive"><table class="table table-sm table-striped table-bordered table-hover mb-3 w-100"><tbody><tr>'+headers+'</tr>'+rows.join('')+'</tbody></table></div></div></div>';
+}
+function buildDescription(row){
+  const details=detailBlock(row);
+  const pedigree=pedigreeBlock(row);
+  const hasCalvingDateHeader=Object.keys(row).some(k=>aliasSet('CALVING_DATE').has(normalizeHeader(k)));
+  const tables=[
+    horizontalTable(row,[
+      ['Ltrs/Day','LTRS_DAY'],['Total Ltrs','TOTAL_LTRS'],['CC','CELL_COUNT'],['Solids','SOLIDS'],['SC','SC'],
+      ...customFieldsForPlacement(row,'TOP_TABLE')
+    ]),
+    productionTable(row),
+    horizontalTable(row,[['Preg Status','PREG_STATUS'],['WIC','WIC'],...customFieldsForPlacement(row,'PREG_TABLE')]),
+    horizontalTable(row,[
+      ['Last Lact Age (Months)','LAST_LACT_AGE_MONTHS'],
+      ['Last Lact Milk','LAST_LACT_MILK'],
+      ['Last Lact Protein','LAST_LACT_PROTEIN'],
+      ['Last Lact Fat','LAST_LACT_FAT'],
+      ['Last Lact Days','LAST_LACT_DAYS'],
+      ...customFieldsForPlacement(row,'LAST_LACT_TABLE')
+    ]),
+    horizontalTable(row,[
+      ['BPI','BPI'],['ASI','ASI'],['HWI','HWI'],['SCC','SCC'],['OT','OT'],['MS','MS'],['Mam','MAM'],['Fert','FERT'],
+      ...customFieldsForPlacement(row,'INDEX_TABLE')
+    ])
+  ];
+
+  if(hasCalvingDateHeader){
+    // Calving Date now appears in the lot details above Joining.
+    // Retain Litres from older dairy files in a compact table.
+    tables.push(horizontalTable(row,[
+      ['Litres','LITRES']
+    ]));
+  }
+
+  const visibleTables=tables.filter(Boolean);
+  return details + pedigree + visibleTables.join('');
+}
+function makeLotName(row,lot){
+  const name=getVal(row,'NAME');
+  if(name)return name;
+  const id=getVal(row,'ID'), type=getVal(row,'TYPE');
+  if(id)return ['Tag '+id,type].filter(Boolean).join(' - ');
+  const breed=getVal(row,'BREED');
+  const fallback=[type,breed].filter(Boolean).join(' - ');
+  return fallback || ('Lot '+lot);
+}
+function normalizeLotKey(v){
+  return clean(v).replace(/^LOT\s*#?\s*/i,'').replace(/^0+(?=\d)/,'').toUpperCase();
+}
+function matchSupplementaryRow(srow){
+  const lot=normalizeLotKey(getVal(srow,'LOT'));
+  const herdbook=normalizeHerdbook(getVal(srow,'HERDBOOK'));
+  const name=normalizeAnimalName(getVal(srow,'NAME'));
+  let matches=[];
+  if(lot)matches=sourceRows.filter(r=>normalizeLotKey(getVal(r,'LOT'))===lot);
+  if(matches.length===1)return {row:matches[0],method:'Lot #'};
+  if(herdbook){
+    const hb=sourceRows.filter(r=>normalizeHerdbook(getVal(r,'HERDBOOK'))===herdbook);
+    if(hb.length===1)return {row:hb[0],method:'Herdbook'};
+    if(!matches.length)matches=hb;
+  }
+  if(name){
+    const nm=sourceRows.filter(r=>normalizeAnimalName(getVal(r,'NAME'))===name);
+    if(nm.length===1)return {row:nm[0],method:'Name'};
+    if(!matches.length)matches=nm;
+  }
+  return {row:null,method:'',multiple:matches.length>1};
+}
+function setRowValueByKey(row,key,value,sourceHeader){
+  let target=Object.keys(row).find(h=>h!=='__row'&&canonicalKeyForHeader(h)===key);
+  if(!target){
+    const mapping=mappingForHeader(sourceHeader);
+    if(mapping?.type==='custom')target=mapping.sourceHeader||sourceHeader;
+    else target=fieldLabelForKey(key)||sourceHeader;
+    if(currentParsed&&!currentParsed.headers.includes(target))currentParsed.headers.push(target);
+  }
+  row[target]=value;
+}
+function compareSupplementary(){
+  if(!currentParsed||!sourceRows.length){
+    el('suppStatus').textContent='Upload the sale catalogue first.';
+    return;
+  }
+  if(!supplementaryParsed){
+    el('suppStatus').textContent='Upload a supplementary sheet first.';
+    return;
+  }
+  const unresolved=unrecognisedHeadersForRows(supplementaryParsed.headers,supplementaryParsed.rows);
+  if(unresolved.length){
+    renderMappingPanel(supplementaryParsed.headers,supplementaryParsed.rows,'suppMappingPanel','suppMappingRows');
+    el('suppStatus').textContent='Map the unrecognised supplementary columns before comparing.';
+    return;
+  }
+
+  const groups=[];
+  let unmatched=0,multiple=0,blankIgnored=0;
+  for(const srow of supplementaryParsed.rows){
+    const match=matchSupplementaryRow(srow);
+    if(!match.row){if(match.multiple)multiple++;else unmatched++;continue;}
+    const changes=[];
+    for(const header of supplementaryParsed.headers){
+      const value=clean(srow[header]);
+      if(value===''){blankIgnored++;continue;}
+      const key=canonicalKeyForHeader(header);
+      if(!key||key==='LOT')continue;
+      const old=getVal(match.row,key);
+      if(clean(old)===value)continue;
+      changes.push({header,key,label:fieldLabelForKey(key),old,value,accepted:true});
+    }
+    if(changes.length){
+      groups.push({
+        sourceRow:match.row,
+        lot:getVal(match.row,'LOT')||getVal(srow,'LOT')||'—',
+        name:getVal(match.row,'NAME')||getVal(srow,'NAME')||'',
+        method:match.method,
+        changes
+      });
+    }
+  }
+  supplementaryDiffs=groups;
+  renderSupplementaryReview();
+  el('suppReview').style.display=groups.length?'block':'none';
+  el('suppStatus').textContent=
+    supplementaryParsed.rows.length+' supplementary rows | '+
+    groups.length+' matched lots with changes | '+
+    unmatched+' unmatched | '+multiple+' ambiguous matches | blanks ignored.';
+}
+function renderSupplementaryReview(){
+  const wrap=el('suppItems');if(!wrap)return;
+  wrap.innerHTML=supplementaryDiffs.map((group,i)=>{
+    return '<div class="supp-item" data-supp-group-wrap="'+i+'">'+
+      '<h3>Lot '+escText(group.lot)+' '+(group.name?'— '+escText(group.name):'')+
+      ' <span class="small">(matched by '+escText(group.method)+')</span></h3>'+
+      '<label class="supp-checks"><input type="checkbox" class="supp-group-check" data-supp-group="'+i+'" checked> Accept all changes to this lot</label>'+
+      group.changes.map((c,j)=>
+        '<div class="supp-change" data-supp-change="'+i+':'+j+'">'+
+          '<strong>'+escText(c.label)+'</strong>'+
+          '<div class="supp-old"><span class="small">Original</span><br>'+escText(c.old||'(blank)')+'</div>'+
+          '<div class="supp-arrow">→</div>'+
+          '<div class="supp-new"><label class="supp-checks"><input type="checkbox" data-supp-accept="'+i+':'+j+'" checked> Accept</label>'+
+          '<textarea data-supp-value="'+i+':'+j+'">'+escText(c.value)+'</textarea></div>'+
+        '</div>'
+      ).join('')+
+      '</div>';
+  }).join('');
+
+  wrap.querySelectorAll('[data-supp-group]').forEach(box=>{
+    box.addEventListener('change',()=>{
+      const i=box.dataset.suppGroup;
+      wrap.querySelectorAll('[data-supp-accept]').forEach(ch=>{
+        if(ch.dataset.suppAccept.startsWith(i+':')){
+          ch.checked=box.checked;
+          wrap.querySelector('[data-supp-change="'+ch.dataset.suppAccept+'"]')?.classList.toggle('supp-ignored',!box.checked);
+        }
+      });
+    });
+  });
+  wrap.querySelectorAll('[data-supp-accept]').forEach(box=>{
+    box.addEventListener('change',()=>{
+      const [i]=box.dataset.suppAccept.split(':');
+      wrap.querySelector('[data-supp-change="'+box.dataset.suppAccept+'"]')?.classList.toggle('supp-ignored',!box.checked);
+      const checks=[...wrap.querySelectorAll('[data-supp-accept]')].filter(x=>x.dataset.suppAccept.startsWith(i+':'));
+      const group=wrap.querySelector('[data-supp-group="'+i+'"]');
+      const count=checks.filter(x=>x.checked).length;
+      if(group){group.checked=count===checks.length;group.indeterminate=count>0&&count<checks.length;}
+    });
+  });
+}
+function rebuildFromCurrentParsed(message){
+  if(!currentParsed)return;
+  const t=transform(currentParsed);
+  outputRows=t.out;
+  draftRows=cloneRows(outputRows);
+  editHistory=[];
+  if(herdbookLinkMap.size)applyHerdbookLinks();
+  else{
+    renderEditPreview(draftRows);
+    renderNextLotPreview(outputRows);
+  }
+  el('sourceCount').textContent=t.sourceCount;
+  el('outputCount').textContent=outputRows.length;
+  el('ignoredCount').textContent=t.ignored;
+  el('startLot').textContent=outputRows[0]?.['Lot #']??'-';
+  showColumnWarning(unrecognisedSourceHeaders(currentParsed));
+  renderMappingPanel(currentParsed.headers,currentParsed.rows,'originalMappingPanel','originalMappingRows');
+  if(message){el('status').textContent=message;el('status').className='status ok';}
+}
+function applySelectedSupplementary(){
+  if(!supplementaryDiffs.length)return;
+  if(isEditingPreview||editHistory.length){
+    el('suppStatus').textContent='Save or cancel current lot edits before applying supplementary changes.';
+    return;
+  }
+  let fields=0,lots=0;
+  supplementaryDiffs.forEach((group,i)=>{
+    let changed=false;
+    group.changes.forEach((c,j)=>{
+      const check=document.querySelector('[data-supp-accept="'+i+':'+j+'"]');
+      if(!check?.checked)return;
+      const control=document.querySelector('[data-supp-value="'+i+':'+j+'"]');
+      const value=control?control.value:c.value;
+      setRowValueByKey(group.sourceRow,c.key,value,c.header);
+      fields++;changed=true;
+    });
+    if(changed)lots++;
+  });
+  if(!fields){el('suppStatus').textContent='No supplementary changes are selected.';return;}
+  rebuildFromCurrentParsed('Supplementary updates applied to '+lots+' lots.');
+  supplementaryDiffs=[];
+  el('suppReview').style.display='none';
+  el('suppItems').innerHTML='';
+  el('suppStatus').textContent='Applied '+fields+' approved field changes across '+lots+' lots. Review the NextLot preview before export.';
+}
+async function handleSupplementaryFile(file){
+  if(!file)return;
+  if(!currentParsed){el('suppStatus').textContent='Upload the sale catalogue first.';return;}
+  try{
+    const buf=await file.arrayBuffer();
+    const isCsv=/\.csv$/i.test(file.name||'');
+    const wb=XLSX.read(buf,{type:'array',raw:isCsv,cellDates:false});
+    let best=null;
+    for(const sheetName of wb.SheetNames){
+      const parsed=rowsFromSupplementSheet(wb.Sheets[sheetName],!!(wb.Workbook&&wb.Workbook.WBProps&&wb.Workbook.WBProps.date1904));
+      if(!parsed)continue;
+      if(!best||parsed.rows.length>best.parsed.rows.length)best={sheetName,parsed};
+    }
+    if(!best)throw new Error('No suitable supplementary sheet was found. Include Lot #, Herdbook, Name, ID or VID so updated lots can be matched.');
+    supplementaryParsed=best.parsed;
+    supplementaryDiffs=[];
+    el('suppFileName').textContent=file.name+' — '+best.sheetName;
+    el('suppStatus').textContent=best.parsed.rows.length+' supplementary rows loaded. Map any new columns, then compare.';
+    el('compareSuppBtn').disabled=false;
+    el('suppReview').style.display='none';
+    renderMappingPanel(best.parsed.headers,best.parsed.rows,'suppMappingPanel','suppMappingRows');
+  }catch(e){
+    supplementaryParsed=null;supplementaryDiffs=[];
+    el('suppStatus').textContent=e.message||'Could not read supplementary file.';
+    el('compareSuppBtn').disabled=true;
+    el('suppMappingPanel').style.display='none';
+    el('suppReview').style.display='none';
+  }
+}
+
+function transform(parsed){
+  const qtyDefault=Math.max(1,parseInt(el('defaultQty').value||'1',10)||1);
+  const startDefault=numOrBlank(el('defaultStart').value);
+  const reserveDefault=numOrBlank(el('defaultReserve').value);
+  const valid=parsed.rows.filter(isAnimalRow);
+  const hasLot=headerHas(parsed.headers,'LOT');
+  let seq=1;
+  const out=valid.map(r=>{
+    const rawLot=getVal(r,'LOT');
+    const lot=hasLot&&rawLot?rawLot:String(seq);
+    seq++;
+    const lotName=makeLotName(r,lot);
+    return {
+      'Lot #':lot,
+      'Lot Name':lotName,
+      'Description':buildDescription(r),
+      'Quantity':qtyDefault,
+      'Starting bid':startDefault,
+      'Reserve Price':reserveDefault,
+      '__herdbook':getVal(r,'HERDBOOK'),
+      '__animalName':getVal(r,'NAME')||lotName
+    };
+  }).sort(naturalLotCompare);
+  return {out,sourceCount:valid.length,ignored:Math.max(0,parsed.totalDataRows-valid.length),hasLot};
+}
+function requiredCheck(parsed){
+  if(!parsed)return 'No suitable dairy catalogue header row was found.';
+  if(!headerHas(parsed.headers,'NAME') && !headerHas(parsed.headers,'ID') && !headerHas(parsed.headers,'LOT')) return 'A Name, dairy ID or lot-number column is required.';
+  return '';
+}
+function descriptionRowCount(html){
+  const doc=new DOMParser().parseFromString('<div id="count-root">'+String(html??'')+'</div>','text/html');
+  const root=doc.getElementById('count-root');
+
+  // Same approach as the Beef MLT Builder:
+  // each visible text line and each table row counts as one NextLot row.
+  function count(node){
+    if(node.nodeType===3)return node.textContent.trim()?1:0;
+    if(node.nodeType!==1)return 0;
+    const tag=node.tagName;
+
+    // A collapsed Pedigree control counts as its one visible button row.
+    if(tag==='DETAILS')return 1;
+    if(tag==='TABLE')return node.querySelectorAll('tr').length;
+    if(tag==='BR')return 1;
+
+    if(['P','LI','TH','TD'].includes(tag)){
+      const breaks=node.querySelectorAll('br').length;
+      return node.textContent.trim()?Math.max(1,breaks+1):breaks;
+    }
+
+    let rows=0,hasText=false;
+    for(const child of node.childNodes){
+      if(child.nodeType===3){
+        if(child.textContent.trim())hasText=true;
+        continue;
+      }
+      if(child.nodeType!==1)continue;
+      if(child.tagName==='BR'){
+        rows++;
+        continue;
+      }
+      if(['STRONG','B','EM','I','U','SPAN','A'].includes(child.tagName)){
+        if(child.textContent.trim())hasText=true;
+        continue;
+      }
+      rows+=count(child);
+    }
+    return rows+(hasText?1:0);
+  }
+
+  return count(root);
+}
+function blankRowCountFromDescription(html){
+  return Math.max(0,8-descriptionRowCount(html));
+}
+function bottomPaddingFromDescription(html){
+  return '<br>'.repeat(blankRowCountFromDescription(html));
+}
+
+function safePreviewHtml(raw){
+  const template=document.createElement('template'); template.innerHTML=String(raw??'');
+  const allowed=new Set(['P','STRONG','BR','B','EM','I','U','A','SPAN','DIV','TABLE','TBODY','THEAD','TR','TH','TD','DETAILS','SUMMARY']);
+  const walker=document.createTreeWalker(template.content,NodeFilter.SHOW_ELEMENT); const nodes=[];
+  while(walker.nextNode())nodes.push(walker.currentNode);
+  nodes.forEach(node=>{
+    if(!allowed.has(node.tagName)){node.replaceWith(...node.childNodes);return;}
+    [...node.attributes].forEach(attr=>{
+      const n=attr.name.toLowerCase();
+      if(n==='class' && ['DIV','TABLE','SUMMARY','A','SPAN','DETAILS'].includes(node.tagName)){
+        const allowedClasses=new Set(['trait-group','trait-group-title','trait-table-width','table-responsive','table','table-sm','table-striped','table-bordered','table-hover','mb-3','w-100','col-12','col-lg-7','px-0','d-none','d-lg-block','btn','btn-primary','btn-outline-primary','btn-sm','rounded-pill','px-3','py-2','pedigree-details','pedigree-actions-summary','pedigree-toggle-label','pedigree-abv-link','pedigree-link-wrap']);
+        const safe=attr.value.split(/\s+/).filter(c=>allowedClasses.has(c));
+        if(safe.length)node.setAttribute('class',safe.join(' '));else node.removeAttribute(attr.name);
+        return;
+      }
+      if(n==='style'){
+        if(node.tagName==='SUMMARY' && node.classList.contains('pedigree-actions-summary')){
+          node.setAttribute('style','display:block!important;border:0!important;background:transparent!important;padding:0!important;margin:5px 0 9px!important;white-space:normal!important;list-style:none!important;list-style-type:none!important;font-size:0!important;line-height:0!important');
+        }else if(node.tagName==='SPAN' && node.classList.contains('pedigree-toggle-label')){
+          node.setAttribute('style','display:inline-block!important;vertical-align:middle!important;margin:0 9px 0 0!important;padding:7px 13px!important;border:1px solid #123c5b!important;border-radius:999px!important;background:#fff!important;color:#123c5b!important;font-size:13px!important;line-height:1.25!important;font-weight:400!important;white-space:nowrap!important');
+        }else if(node.tagName==='A' && node.classList.contains('pedigree-abv-link')){
+          node.setAttribute('style','display:inline-block!important;vertical-align:middle!important;margin:0!important;padding:7px 13px!important;border:1px solid #00364b!important;border-radius:999px!important;background:#00364b!important;color:#fff!important;text-decoration:none!important;font-size:13px!important;line-height:1.25!important;font-weight:600!important;white-space:nowrap!important');
+        }else if(node.tagName==='DIV' && node.classList.contains('pedigree-link-wrap')){
+          node.setAttribute('style','display:block!important;margin:5px 0 9px!important');
+        }else{
+          node.removeAttribute(attr.name);
+        }
+        return;
+      }
+      if(node.tagName==='A' && n==='href'){
+        const safe=safeHttpUrl(attr.value);
+        if(safe)node.setAttribute('href',safe);else node.removeAttribute(attr.name);
+        return;
+      }
+      if(node.tagName==='A' && n==='target'){
+        if(attr.value==='_blank')node.setAttribute('target','_blank');else node.removeAttribute(attr.name);
+        return;
+      }
+      if(node.tagName==='A' && n==='contenteditable'){
+        node.setAttribute('contenteditable','false');
+        return;
+      }
+      if(node.tagName==='A' && n==='rel'){
+        node.setAttribute('rel','noopener noreferrer');
+        return;
+      }
+      node.removeAttribute(attr.name);
+    });
+  });
+  return template.innerHTML;
+}
+function renderNextLotPreview(rows){
+  const wrap=el('nextLotPreview');wrap.innerHTML='';
+  rows.forEach((r,rowIndex)=>{
+    const card=document.createElement('div');card.className='nextlot-card';
+    const head=document.createElement('div');head.className='nextlot-card-head';
+    const lotNo=document.createElement('div');lotNo.className='nextlot-lotno';lotNo.innerHTML='<span>#</span><strong>'+escText(r['Lot #']??'')+'</strong>';
+    const editBtn=document.createElement('button');editBtn.type='button';editBtn.className='btn btn-primary nextlot-edit-btn';editBtn.textContent='Edit Lot';editBtn.addEventListener('click',()=>beginEditingLot(rowIndex));
+    head.appendChild(lotNo);head.appendChild(editBtn);
+    const title=document.createElement('div');title.className='nextlot-title';title.textContent=r['Lot Name']??'';
+    const exportDescription=stripVendorAccountLine(r['Description']??'');
+    const desc=document.createElement('div');desc.className='nextlot-description';desc.innerHTML=safePreviewHtml(exportDescription);
+    const blankRows=blankRowCountFromDescription(exportDescription);
+    const spacer=document.createElement('div');spacer.className='export-spacer';
+    spacer.setAttribute('aria-label',blankRows+' automatic blank rows added for NextLot');
+    spacer.style.height=(blankRows*18)+'px';
+    spacer.style.display=blankRows?'block':'none';
+    const meta=document.createElement('div');meta.className='nextlot-meta';
+    meta.innerHTML='<span>Quantity: '+escText(r['Quantity']??'')+'</span><span>Starting bid: '+escText(r['Starting bid']??'')+'</span><span>Reserve: '+escText(r['Reserve Price']??'')+'</span>';
+    card.appendChild(head);card.appendChild(title);card.appendChild(desc);card.appendChild(spacer);card.appendChild(meta);wrap.appendChild(card);
+  });
+}
+function parseEditedValue(key,value){
+  const s=clean(value);
+  if(['Quantity','Starting bid','Reserve Price'].includes(key)){
+    if(s==='')return key==='Quantity'?1:'';
+    const n=Number(s.replace(/[$,\s]/g,''));return Number.isFinite(n)?n:s;
+  }
+  return value;
+}
+function renderEditPreview(rows){
+  const body=el('previewBody');body.innerHTML='';
+  const keys=['Lot #','Lot Name','Description','Quantity','Starting bid','Reserve Price'];
+  rows.forEach((r,rowIndex)=>{
+    const tr=document.createElement('tr');
+    keys.forEach(k=>{
+      const td=document.createElement('td');
+
+      if(k==='Description'){
+        const field=document.createElement('div');
+        field.className='edit-description';
+        field.contentEditable='true';
+        field.dataset.row=rowIndex;
+        field.dataset.key=k;
+        field.innerHTML=safePreviewHtml(r[k]??'');
+
+        field.addEventListener('focus',()=>{
+          field.dataset.originalValue=draftRows[rowIndex][k]??'';
+        });
+
+        field.addEventListener('blur',()=>{
+          const oldValue=field.dataset.originalValue??draftRows[rowIndex][k]??'';
+          const newValue=safePreviewHtml(field.innerHTML);
+          field.innerHTML=newValue;
+          const oldC=String(oldValue??''), newC=String(newValue??'');
+          if(oldC!==newC){
+            editHistory.push({row:rowIndex,key:k,oldValue});
+            draftRows[rowIndex][k]=newValue;
+            markUnsaved();
+          }
+          field.dataset.originalValue=newValue;
+        });
+
+        td.appendChild(field);
+      }else{
+        const field=document.createElement('input');
+        field.className='edit-field';
+        field.value=r[k]??'';
+        field.dataset.row=rowIndex;
+        field.dataset.key=k;
+        if(['Quantity','Starting bid','Reserve Price'].includes(k))field.inputMode='decimal';
+        field.addEventListener('change',()=>{
+          const oldValue=draftRows[rowIndex][k], newValue=parseEditedValue(k,field.value);
+          const oldC=oldValue===null||oldValue===undefined?'':String(oldValue), newC=newValue===null||newValue===undefined?'':String(newValue);
+          if(oldC!==newC){
+            editHistory.push({row:rowIndex,key:k,oldValue});
+            draftRows[rowIndex][k]=newValue;
+            markUnsaved();
+          }
+        });
+        td.appendChild(field);
+      }
+
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+}
+function setPreviewMode(editing){
+  isEditingPreview=editing;
+  el('nextLotPreview').classList.toggle('mode-hidden',editing);el('editPreview').classList.toggle('mode-hidden',!editing);el('editPreviewBtn').classList.toggle('mode-hidden',editing);el('saveChangesBtn').classList.toggle('mode-hidden',!editing);el('undoChangeBtn').classList.toggle('mode-hidden',!editing);el('cancelEditBtn').classList.toggle('mode-hidden',!editing);
+  el('previewTitle').textContent=editing?'Edit Lots':'NextLot Preview';
+  el('previewHelp').textContent=editing?'Edit any field below. The Description is now edited visually, much like the NextLot preview, rather than as raw HTML. Save Changes returns you to the preview.':'This shows how the lot title and description will appear in NextLot. Use Edit Lot on any lot to jump straight to that row.';
+}
+function markUnsaved(){const changed=editHistory.length>0;el('saveChangesBtn').disabled=!changed;el('undoChangeBtn').disabled=!changed;el('downloadBtn').disabled=changed||!outputRows.length;if(changed){el('status').textContent='Unsaved changes — click Save Changes before downloading.';el('status').className='status warn';}}
+function beginEditing(){draftRows=cloneRows(outputRows);editHistory=[];renderEditPreview(draftRows);setPreviewMode(true);markUnsaved();el('saveChangesBtn').disabled=true;el('undoChangeBtn').disabled=true;el('downloadBtn').disabled=true;el('status').textContent='Editing preview';el('status').className='status';}
+function beginEditingLot(rowIndex){beginEditing();requestAnimationFrame(()=>{const rows=el('previewBody').querySelectorAll('tr');rows.forEach(r=>r.classList.remove('edit-target'));const row=rows[rowIndex];if(!row)return;row.classList.add('edit-target');row.scrollIntoView({behavior:'smooth',block:'center'});const field=row.querySelector('[data-key="Lot Name"]')||row.querySelector('.edit-field');if(field){field.focus({preventScroll:true});if(typeof field.select==='function')field.select();}});}
+function saveChanges(){if(!draftRows.length)return;outputRows=cloneRows(draftRows).sort(naturalLotCompare);draftRows=cloneRows(outputRows);editHistory=[];renderEditPreview(draftRows);renderNextLotPreview(outputRows);setPreviewMode(false);el('saveChangesBtn').disabled=true;el('undoChangeBtn').disabled=true;el('downloadBtn').disabled=!outputRows.length;updateFilenamePreview();el('status').textContent='Changes saved — '+outputRows.length+' lots ready';el('status').className='status ok';}
+function undoChange(){const change=editHistory.pop();if(!change)return;draftRows[change.row][change.key]=change.oldValue;renderEditPreview(draftRows);markUnsaved();if(!editHistory.length){el('saveChangesBtn').disabled=true;el('undoChangeBtn').disabled=true;el('status').textContent='Editing preview';el('status').className='status';}}
+function cancelEditing(){draftRows=cloneRows(outputRows);editHistory=[];renderEditPreview(draftRows);setPreviewMode(false);el('downloadBtn').disabled=!outputRows.length;el('status').textContent=outputRows.length+' lots ready';el('status').className='status ok';}
+function applyDefaults(){
+  if(!outputRows.length)return;
+  if(isEditingPreview){el('status').textContent='Save or cancel the current edits before applying defaults.';el('status').className='status warn';return;}
+  const q=Math.max(1,parseInt(el('defaultQty').value||'1',10)||1),sb=numOrBlank(el('defaultStart').value),rp=numOrBlank(el('defaultReserve').value);
+  outputRows=outputRows.map(r=>({...r,'Quantity':q,'Starting bid':sb,'Reserve Price':rp}));draftRows=cloneRows(outputRows);renderNextLotPreview(outputRows);renderEditPreview(draftRows);el('status').textContent='Defaults applied to all '+outputRows.length+' lots.';el('status').className='status ok';
+}
+async function handleFile(file){
+  if(!file)return;
+  if(!window.XLSX){el('status').textContent='The Excel reader could not load. Check the internet connection and reopen the builder.';el('status').className='status err';return;}
+  el('status').textContent='Reading file…';el('status').className='status';
+  try{
+    const buf=await file.arrayBuffer();
+    const isCsv=/\.csv$/i.test(file.name||'');
+    const wb=XLSX.read(buf,{type:'array',raw:isCsv,cellDates:false});
+    let best=null;
+    for(const sheetName of wb.SheetNames){
+      const parsed=rowsFromSheet(wb.Sheets[sheetName],!!(wb.Workbook&&wb.Workbook.WBProps&&wb.Workbook.WBProps.date1904));if(!parsed)continue;
+      const count=parsed.rows.filter(isAnimalRow).length;
+      if(!best||count>best.count)best={sheetName,parsed,count};
+    }
+    if(!best)throw new Error('No suitable dairy catalogue sheet was found.');
+    const err=requiredCheck(best.parsed);if(err)throw new Error(err);
+    const t=transform(best.parsed);if(!t.out.length)throw new Error('The dairy header was found, but no animal lot rows were created.');
+    resetHerdbookLinks();
+    currentParsed=best.parsed;
+    sourceRows=best.parsed.rows;outputRows=t.out;draftRows=cloneRows(outputRows);editHistory=[];
+    supplementaryParsed=null;supplementaryDiffs=[];
+    suppInput.disabled=false;el('compareSuppBtn').disabled=true;el('suppFileName').textContent='';el('suppStatus').textContent='No supplementary file loaded.';el('suppReview').style.display='none';
+    linkInput.disabled=false;el('linkFileBtn').classList.remove('disabled');
+    const unrecognised=unrecognisedSourceHeaders(best.parsed);
+    showColumnWarning(unrecognised);
+    renderMappingPanel(best.parsed.headers,best.parsed.rows,'originalMappingPanel','originalMappingRows');
+    el('fileName').textContent=file.name+' — '+best.sheetName;el('sourceCount').textContent=t.sourceCount;el('outputCount').textContent=outputRows.length;el('ignoredCount').textContent=t.ignored;el('startLot').textContent=outputRows[0]['Lot #']??'-';el('stats').style.display='grid';
+    el('downloadBtn').disabled=false;el('clearBtn').disabled=false;el('applyDefaultsBtn').disabled=false;el('previewCard').style.display='block';renderEditPreview(draftRows);renderNextLotPreview(outputRows);setPreviewMode(false);updateFilenamePreview();
+    el('status').textContent='Loaded '+outputRows.length+' lots from '+best.sheetName+(t.hasLot?'. Lots sorted by catalogue lot number.':'. No lot-number column was found, so sequential lot numbers were generated.');el('status').className='status ok';
+  }catch(e){currentParsed=null;outputRows=[];draftRows=[];showColumnWarning([]);el('originalMappingPanel').style.display='none';el('downloadBtn').disabled=true;el('applyDefaultsBtn').disabled=true;el('previewCard').style.display='none';el('status').textContent=e.message||'Could not read the file.';el('status').className='status err';}
+}
+function download(){
+  if(!outputRows.length)return;
+  if(isEditingPreview||editHistory.length){el('status').textContent='Save or cancel the current edits before downloading.';el('status').className='status warn';return;}
+  outputRows=cloneRows(outputRows).sort(naturalLotCompare);
+  const headers=['Lot #','Lot Name','Description','Quantity','Starting bid','Reserve Price'];
+  const data=[headers,...outputRows.map(r=>headers.map(h=>{
+    if(h!=='Description')return r[h];
+    const description=stripVendorAccountLine(r[h]);
+    return description+bottomPaddingFromDescription(description);
+  }))];
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  ws['!cols']=[{wch:10},{wch:24},{wch:110},{wch:12},{wch:14},{wch:14}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Lots');
+  XLSX.writeFile(wb,getOutputFileBase()+'.xlsx',{compression:true});
+}
+function clearAll(){input.value='';suppInput.value='';resetHerdbookLinks();linkInput.disabled=true;el('linkFileBtn').classList.add('disabled');suppInput.disabled=true;el('compareSuppBtn').disabled=true;currentParsed=null;supplementaryParsed=null;supplementaryDiffs=[];sourceRows=[];outputRows=[];draftRows=[];editHistory=[];showColumnWarning([]);el('originalMappingPanel').style.display='none';el('suppMappingPanel').style.display='none';el('suppReview').style.display='none';el('suppFileName').textContent='';el('suppStatus').textContent='No supplementary file loaded.';el('hideVendor').checked=false;el('saleName').value='';el('fileName').textContent='';el('status').textContent='';el('status').className='status';el('stats').style.display='none';el('previewCard').style.display='none';el('downloadBtn').disabled=true;el('clearBtn').disabled=true;el('applyDefaultsBtn').disabled=true;el('nextLotPreview').innerHTML='';el('previewBody').innerHTML='';setPreviewMode(false);updateFilenamePreview();}
+input.addEventListener('change',()=>handleFile(input.files[0]));
+suppInput.addEventListener('change',()=>handleSupplementaryFile(suppInput.files[0]));
+linkInput.addEventListener('change',()=>handleHerdbookLinkFile(linkInput.files[0]));
+el('applyOriginalMappings').addEventListener('click',()=>{const n=collectMappings('originalMappingRows');rebuildFromCurrentParsed(n+' catalogue mapping(s) applied and saved.');});
+el('downloadMappingWorkbook').addEventListener('click',downloadCurrentMappingWorkbook);
+el('applySuppMappings').addEventListener('click',()=>{const n=collectMappings('suppMappingRows');if(supplementaryParsed)renderMappingPanel(supplementaryParsed.headers,supplementaryParsed.rows,'suppMappingPanel','suppMappingRows');el('suppStatus').textContent=n+' supplementary mapping(s) applied and saved. Click Compare supplementary.';});
+el('compareSuppBtn').addEventListener('click',compareSupplementary);
+el('suppApply').addEventListener('click',applySelectedSupplementary);
+el('suppAcceptAll').addEventListener('click',()=>{document.querySelectorAll('[data-supp-group]').forEach(x=>{x.checked=true;x.indeterminate=false});document.querySelectorAll('[data-supp-accept]').forEach(x=>x.checked=true);document.querySelectorAll('.supp-change').forEach(x=>x.classList.remove('supp-ignored'));});
+el('suppIgnoreAll').addEventListener('click',()=>{document.querySelectorAll('[data-supp-group]').forEach(x=>{x.checked=false;x.indeterminate=false});document.querySelectorAll('[data-supp-accept]').forEach(x=>x.checked=false);document.querySelectorAll('.supp-change').forEach(x=>x.classList.add('supp-ignored'));});
+el('saleName').addEventListener('input',updateFilenamePreview);el('hideVendor').addEventListener('change',()=>{if(outputRows.length)renderNextLotPreview(outputRows);});el('applyDefaultsBtn').addEventListener('click',applyDefaults);el('downloadBtn').addEventListener('click',download);el('clearBtn').addEventListener('click',clearAll);el('editPreviewBtn').addEventListener('click',beginEditing);el('saveChangesBtn').addEventListener('click',saveChanges);el('undoChangeBtn').addEventListener('click',undoChange);el('cancelEditBtn').addEventListener('click',cancelEditing);
+['dragenter','dragover'].forEach(evt=>drop.addEventListener(evt,e=>{e.preventDefault();drop.classList.add('drag')}));
+['dragleave','drop'].forEach(evt=>drop.addEventListener(evt,e=>{e.preventDefault();drop.classList.remove('drag')}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)handleFile(f)});
+updateFilenamePreview();
+})();
+</script>
+</body>
+</html>
