@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Dairy MLT Builder v6.5</title>
+<title>Dairy MLT Builder v6.6</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{--navy:#082444;--orange:#f28c28;--ink:#172033;--muted:#6b7280;--line:#d9dee7;--bg:#f5f7fa;--good:#0f7b49;--bad:#b42318;--soft:#f8fafc}
@@ -43,6 +43,17 @@ h1{margin:0;color:var(--navy);font-size:29px}.version{font-size:13px;color:var(-
 .mapping-custom{display:contents}
 .mapping-custom.is-hidden input,.mapping-custom.is-hidden select{visibility:hidden;pointer-events:none}
 .mapping-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
+.saved-mappings{margin-top:16px;padding-top:14px;border-top:1px solid #dbe4ec}
+.saved-mappings h4{margin:0 0 6px;color:var(--navy);font-size:14px}
+.saved-mappings-empty{font-size:12px;color:var(--muted);padding:8px 0}
+.saved-mappings-table-wrap{overflow-x:auto}
+.saved-mappings table{width:100%;border-collapse:collapse;background:#fff;font-size:12px}
+.saved-mappings th,.saved-mappings td{border:1px solid #dbe4ec;padding:7px;text-align:left;vertical-align:top}
+.saved-mappings th{background:#eef2f7;color:var(--navy);font-weight:800}
+.saved-map-actions{display:flex;gap:6px;flex-wrap:wrap}
+.saved-map-actions .btn{padding:5px 9px;font-size:11px}
+.mapping-row.mapping-editing{background:#fff8e8;border-radius:6px;padding-left:7px;padding-right:7px}
+.mapping-edit-note{grid-column:1/-1;font-size:11px;font-weight:750;color:#8a5b00;margin-bottom:-2px}
 .supp-section{margin-top:16px;border:1px solid var(--line);border-radius:10px;padding:16px;background:#fff}
 .supp-section h2{margin:0 0 8px;font-size:18px;color:var(--navy)}
 .supp-upload-row{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-top:12px}
@@ -109,7 +120,7 @@ h1{margin:0;color:var(--navy);font-size:29px}.version{font-size:13px;color:var(-
 <div class="wrap">
   <div class="header">
     <div><h1>Dairy MLT Builder</h1><div class="small">Converts a dairy catalogue spreadsheet into a NextLot MLT upload file.</div></div>
-    <div class="version">v6.5</div>
+    <div class="version">v6.6</div>
   </div>
 
   <div class="card instructions">
@@ -148,12 +159,17 @@ h1{margin:0;color:var(--navy);font-size:29px}.version{font-size:13px;color:var(-
 
     <div id="originalMappingPanel" class="mapping-box">
       <h3>Unrecognised catalogue column mapping</h3>
-      <div class="small">Map an unrecognised heading to an existing Dairy field, ignore it, or create a new MLT field and choose where it should appear. Use <strong>Download Current Mapping Excel</strong> to export the full mapping register, including all recognised header variations and any mappings you add.</div>
+      <div class="small">Map an unrecognised heading to an existing Dairy field, ignore it, or create a new MLT field and choose where it should appear. Previously saved mappings can be reviewed, edited or removed below without re-uploading the catalogue. Use <strong>Download Current Mapping Excel</strong> to export the full mapping register, including all recognised header variations and any mappings you add.</div>
       <div id="columnWarning" class="column-warning"></div>
       <div id="originalMappingRows" class="mapping-list"></div>
       <div class="mapping-actions">
         <button type="button" id="applyOriginalMappings" class="btn btn-primary">Apply &amp; Save Mappings</button>
         <button type="button" id="downloadMappingWorkbook" class="btn">Download Current Mapping Excel</button>
+      </div>
+      <div id="savedMappingsSection" class="saved-mappings">
+        <h4>Saved mappings</h4>
+        <div class="small">Review mappings that have been manually saved in this browser. Edit a mapping to reopen it in the controls above, or remove it to return that source heading to automatic/unrecognised handling.</div>
+        <div id="savedMappingsList"></div>
       </div>
     </div>
 
@@ -256,6 +272,7 @@ let confirmedHerdbookLinks=new Set();
 let currentParsed=null;
 let supplementaryParsed=null;
 let supplementaryDiffs=[];
+let editingSavedMappingHeader='';
 const DAIRY_MAPPING_STORAGE_KEY='stocklive-dairy-column-mappings-v1';
 function readSavedColumnMappings(){
   try{
@@ -363,11 +380,16 @@ function mappingForHeader(header){
   return userColumnMappings[normalizeHeader(header)]||null;
 }
 function canonicalKeyForHeader(header){
+  // A deliberate saved mapping for this exact source heading takes priority
+  // over automatic aliases so incorrect mappings can be corrected reliably.
+  const m=mappingForHeader(header);
+  if(m){
+    if(m.type==='ignore')return '';
+    return m.key||'';
+  }
   const direct=directAliasKey(header);
   if(direct)return direct;
-  const m=mappingForHeader(header);
-  if(!m||m.type==='ignore')return '';
-  return m.key||'';
+  return '';
 }
 function headerMapsTo(header,key){
   return canonicalKeyForHeader(header)===key;
@@ -409,31 +431,51 @@ function unrecognisedHeadersForRows(headers,rows){
   }
   return out;
 }
+function mappingRowHtml(header,i,isEditing=false){
+  const existing=mappingForHeader(header);
+  const selected=existing?(existing.type==='custom'?'__CUSTOM__':existing.type==='ignore'?'__IGNORE__':existing.key):'';
+  const label=existing?.label||header;
+  const placement=existing?.placement||'DETAIL_BOTTOM';
+  const hide=selected==='__CUSTOM__'?'':' is-hidden';
+  return '<div class="mapping-row'+(isEditing?' mapping-editing':'')+'" data-map-row="'+i+'" data-map-header="'+escAttr(header)+'">'+
+    (isEditing?'<div class="mapping-edit-note">Editing saved mapping</div>':'')+
+    '<div class="mapping-source">'+escText(header)+'</div>'+
+    '<select class="mapping-destination">'+mappingOptionsHtml(selected)+'</select>'+
+    '<div class="mapping-custom'+hide+'"><input class="mapping-label" value="'+escAttr(label)+'" placeholder="New field label">'+
+    '<select class="mapping-placement">'+placementOptionsHtml(placement)+'</select></div>'+
+    '</div>';
+}
 function renderMappingPanel(headers,rows,panelId,rowsId){
   const panel=el(panelId),wrap=el(rowsId);
   if(!panel||!wrap)return;
-  const unknown=unrecognisedHeadersForRows(headers,rows);
-  if(!unknown.length){panel.style.display='none';wrap.innerHTML='';return;}
-  wrap.innerHTML=unknown.map((header,i)=>{
-    const existing=mappingForHeader(header);
-    const selected=existing?(existing.type==='custom'?'__CUSTOM__':existing.type==='ignore'?'__IGNORE__':existing.key):'';
-    const label=existing?.label||header;
-    const placement=existing?.placement||'DETAIL_BOTTOM';
-    const hide=selected==='__CUSTOM__'?'':' is-hidden';
-    return '<div class="mapping-row" data-map-row="'+i+'" data-map-header="'+escAttr(header)+'">'+
-      '<div class="mapping-source">'+escText(header)+'</div>'+
-      '<select class="mapping-destination">'+mappingOptionsHtml(selected)+'</select>'+
-      '<div class="mapping-custom'+hide+'"><input class="mapping-label" value="'+escAttr(label)+'" placeholder="New field label">'+
-      '<select class="mapping-placement">'+placementOptionsHtml(placement)+'</select></div>'+
-      '</div>';
-  }).join('');
+
+  let unknown=unrecognisedHeadersForRows(headers||[],rows||[]);
+  const isOriginal=panelId==='originalMappingPanel';
+
+  // When editing a saved mapping, reopen that source heading in the same
+  // mapping controls even if it is currently recognised because of the save.
+  if(isOriginal&&editingSavedMappingHeader){
+    const editNorm=normalizeHeader(editingSavedMappingHeader);
+    if(!unknown.some(h=>normalizeHeader(h)===editNorm))unknown=[editingSavedMappingHeader,...unknown];
+  }
+
+  wrap.innerHTML=unknown.map((header,i)=>
+    mappingRowHtml(header,i,isOriginal&&editingSavedMappingHeader&&normalizeHeader(header)===normalizeHeader(editingSavedMappingHeader))
+  ).join('');
+
   wrap.querySelectorAll('.mapping-destination').forEach(sel=>{
     sel.addEventListener('change',()=>{
       const row=sel.closest('.mapping-row'),custom=row.querySelector('.mapping-custom');
       custom.classList.toggle('is-hidden',sel.value!=='__CUSTOM__');
     });
   });
-  panel.style.display='block';
+
+  if(isOriginal){
+    renderSavedMappings();
+    panel.style.display=(unknown.length||Object.keys(userColumnMappings).length)?'block':'none';
+  }else{
+    panel.style.display=unknown.length?'block':'none';
+  }
 }
 function standardPlacementForKey(key){
   if(['LOT','NAME','ID','TYPE','BREED'].includes(key))return 'Source / lot identification';
@@ -450,6 +492,95 @@ function standardPlacementForKey(key){
 }
 function placementLabel(key){
   return (CUSTOM_PLACEMENTS.find(([k])=>k===key)||[])[1]||key;
+}
+function savedMappingDestination(m){
+  if(!m)return '—';
+  if(m.type==='ignore')return 'Ignored';
+  if(m.type==='custom')return m.label||m.sourceHeader||'Custom field';
+  return fieldLabelForKey(m.key);
+}
+function savedMappingTypeLabel(m){
+  if(!m)return '—';
+  if(m.type==='ignore')return 'Ignored';
+  if(m.type==='custom')return 'Custom MLT field';
+  return 'Existing Dairy field';
+}
+function savedMappingPosition(m){
+  if(!m)return '—';
+  if(m.type==='ignore')return 'Not included in MLT';
+  if(m.type==='custom')return placementLabel(m.placement||'DETAIL_BOTTOM');
+  return standardPlacementForKey(m.key);
+}
+function renderSavedMappings(){
+  const wrap=el('savedMappingsList');
+  const section=el('savedMappingsSection');
+  if(!wrap||!section)return;
+
+  const entries=Object.entries(userColumnMappings)
+    .filter(([,m])=>m&&m.type)
+    .sort((a,b)=>String(a[1]?.sourceHeader||a[0]).localeCompare(String(b[1]?.sourceHeader||b[0]),undefined,{sensitivity:'base'}));
+
+  if(!entries.length){
+    wrap.innerHTML='<div class="saved-mappings-empty">No manually saved mappings in this browser.</div>';
+    return;
+  }
+
+  wrap.innerHTML=
+    '<div class="saved-mappings-table-wrap"><table>'+
+    '<thead><tr><th>Source Column</th><th>Current destination / Dairy field</th><th>Mapping Type</th><th>Current MLT position</th><th>Actions</th></tr></thead>'+
+    '<tbody>'+
+    entries.map(([normalized,m])=>
+      '<tr>'+
+        '<td>'+escText(m.sourceHeader||normalized)+'</td>'+
+        '<td>'+escText(savedMappingDestination(m))+'</td>'+
+        '<td>'+escText(savedMappingTypeLabel(m))+'</td>'+
+        '<td>'+escText(savedMappingPosition(m))+'</td>'+
+        '<td><div class="saved-map-actions">'+
+          '<button type="button" class="btn saved-map-edit" data-saved-map="'+escAttr(normalized)+'">Edit</button>'+
+          '<button type="button" class="btn btn-danger saved-map-remove" data-saved-map="'+escAttr(normalized)+'">Remove</button>'+
+        '</div></td>'+
+      '</tr>'
+    ).join('')+
+    '</tbody></table></div>';
+
+  wrap.querySelectorAll('.saved-map-edit').forEach(btn=>{
+    btn.addEventListener('click',()=>editSavedMapping(btn.dataset.savedMap));
+  });
+  wrap.querySelectorAll('.saved-map-remove').forEach(btn=>{
+    btn.addEventListener('click',()=>removeSavedMapping(btn.dataset.savedMap));
+  });
+}
+function editSavedMapping(normalized){
+  const m=userColumnMappings[normalized];
+  if(!m)return;
+  editingSavedMappingHeader=m.sourceHeader||normalized;
+  renderMappingPanel(currentParsed?.headers||[],currentParsed?.rows||[],'originalMappingPanel','originalMappingRows');
+  const row=[...el('originalMappingRows').querySelectorAll('.mapping-row')]
+    .find(r=>normalizeHeader(r.dataset.mapHeader)===normalizeHeader(editingSavedMappingHeader));
+  if(row)row.scrollIntoView({behavior:'smooth',block:'center'});
+}
+function refreshSupplementaryMappingAfterSavedChange(){
+  if(supplementaryParsed){
+    renderMappingPanel(supplementaryParsed.headers,supplementaryParsed.rows,'suppMappingPanel','suppMappingRows');
+  }
+}
+function removeSavedMapping(normalized){
+  const m=userColumnMappings[normalized];
+  if(!m)return;
+  const source=m.sourceHeader||normalized;
+  delete userColumnMappings[normalized];
+  saveColumnMappings();
+
+  if(editingSavedMappingHeader&&normalizeHeader(editingSavedMappingHeader)===normalizeHeader(source)){
+    editingSavedMappingHeader='';
+  }
+
+  if(currentParsed){
+    rebuildFromCurrentParsed('Saved mapping removed for '+source+'.');
+  }else{
+    renderMappingPanel([],[],'originalMappingPanel','originalMappingRows');
+  }
+  refreshSupplementaryMappingAfterSavedChange();
 }
 function currentMappingReportRows(){
   const grouped=new Map();
@@ -975,15 +1106,21 @@ function showColumnWarning(headers){
 }
 function getVal(row,key){
   const keys=Object.keys(row).filter(k=>k!=='__row');
-  const direct=keys.find(k=>directAliasKey(k)===key);
-  if(direct!==undefined)return clean(row[direct]);
-  const mapped=keys.find(k=>canonicalKeyForHeader(k)===key);
-  return mapped!==undefined?clean(row[mapped]):'';
+
+  // Explicit saved mappings take precedence over automatic aliases.
+  const mapped=keys.find(k=>{
+    const m=mappingForHeader(k);
+    return m&&m.type!=='ignore'&&canonicalKeyForHeader(k)===key;
+  });
+  if(mapped!==undefined)return clean(row[mapped]);
+
+  const direct=keys.find(k=>!mappingForHeader(k)&&directAliasKey(k)===key);
+  return direct!==undefined?clean(row[direct]):'';
 }
 
 function getVendorEntry(row){
-  const wanted=aliasSet('VENDOR');
-  const hit=Object.keys(row).find(k=>wanted.has(normalizeHeader(k)));
+  const keys=Object.keys(row).filter(k=>k!=='__row');
+  const hit=keys.find(k=>canonicalKeyForHeader(k)==='VENDOR');
   if(!hit)return {label:'Vendor',value:''};
   const h=normalizeHeader(hit);
   const label=(h==='A/C' || h==='A/C NAME' || h==='ACCOUNT' || h==='ACCOUNT NAME')?'A/C':'Vendor';
@@ -1555,6 +1692,7 @@ function rebuildFromCurrentParsed(message){
   el('startLot').textContent=outputRows[0]?.['Lot #']??'-';
   showColumnWarning(unrecognisedSourceHeaders(currentParsed));
   renderMappingPanel(currentParsed.headers,currentParsed.rows,'originalMappingPanel','originalMappingRows');
+  refreshSupplementaryMappingAfterSavedChange();
   if(message){el('status').textContent=message;el('status').className='status ok';}
 }
 function applySelectedSupplementary(){
@@ -1895,13 +2033,24 @@ function download(){
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Lots');
   XLSX.writeFile(wb,getOutputFileBase()+'.xlsx',{compression:true});
 }
-function clearAll(){input.value='';suppInput.value='';resetHerdbookLinks();linkInput.disabled=true;el('linkFileBtn').classList.add('disabled');suppInput.disabled=true;el('compareSuppBtn').disabled=true;currentParsed=null;supplementaryParsed=null;supplementaryDiffs=[];sourceRows=[];outputRows=[];draftRows=[];editHistory=[];showColumnWarning([]);el('originalMappingPanel').style.display='none';el('suppMappingPanel').style.display='none';el('suppReview').style.display='none';el('suppFileName').textContent='';el('suppStatus').textContent='No supplementary file loaded.';el('hideVendor').checked=false;el('saleName').value='';el('fileName').textContent='';el('status').textContent='';el('status').className='status';el('stats').style.display='none';el('previewCard').style.display='none';el('downloadBtn').disabled=true;el('clearBtn').disabled=true;el('applyDefaultsBtn').disabled=true;el('nextLotPreview').innerHTML='';el('previewBody').innerHTML='';setPreviewMode(false);updateFilenamePreview();}
+function clearAll(){input.value='';suppInput.value='';resetHerdbookLinks();linkInput.disabled=true;el('linkFileBtn').classList.add('disabled');suppInput.disabled=true;el('compareSuppBtn').disabled=true;currentParsed=null;supplementaryParsed=null;supplementaryDiffs=[];editingSavedMappingHeader='';sourceRows=[];outputRows=[];draftRows=[];editHistory=[];showColumnWarning([]);el('suppMappingPanel').style.display='none';el('suppReview').style.display='none';el('suppFileName').textContent='';el('suppStatus').textContent='No supplementary file loaded.';el('hideVendor').checked=false;el('saleName').value='';el('fileName').textContent='';el('status').textContent='';el('status').className='status';el('stats').style.display='none';el('previewCard').style.display='none';el('downloadBtn').disabled=true;el('clearBtn').disabled=true;el('applyDefaultsBtn').disabled=true;el('nextLotPreview').innerHTML='';el('previewBody').innerHTML='';setPreviewMode(false);renderMappingPanel([],[],'originalMappingPanel','originalMappingRows');updateFilenamePreview();}
 input.addEventListener('change',()=>handleFile(input.files[0]));
 suppInput.addEventListener('change',()=>handleSupplementaryFile(suppInput.files[0]));
 linkInput.addEventListener('change',()=>handleHerdbookLinkFile(linkInput.files[0]));
-el('applyOriginalMappings').addEventListener('click',()=>{const n=collectMappings('originalMappingRows');rebuildFromCurrentParsed(n+' catalogue mapping(s) applied and saved.');});
+el('applyOriginalMappings').addEventListener('click',()=>{
+  const n=collectMappings('originalMappingRows');
+  editingSavedMappingHeader='';
+  if(currentParsed)rebuildFromCurrentParsed(n+' catalogue mapping(s) applied and saved.');
+  else renderMappingPanel([],[],'originalMappingPanel','originalMappingRows');
+  refreshSupplementaryMappingAfterSavedChange();
+});
 el('downloadMappingWorkbook').addEventListener('click',downloadCurrentMappingWorkbook);
-el('applySuppMappings').addEventListener('click',()=>{const n=collectMappings('suppMappingRows');if(supplementaryParsed)renderMappingPanel(supplementaryParsed.headers,supplementaryParsed.rows,'suppMappingPanel','suppMappingRows');el('suppStatus').textContent=n+' supplementary mapping(s) applied and saved. Click Compare supplementary.';});
+el('applySuppMappings').addEventListener('click',()=>{
+  const n=collectMappings('suppMappingRows');
+  if(supplementaryParsed)renderMappingPanel(supplementaryParsed.headers,supplementaryParsed.rows,'suppMappingPanel','suppMappingRows');
+  renderMappingPanel(currentParsed?.headers||[],currentParsed?.rows||[],'originalMappingPanel','originalMappingRows');
+  el('suppStatus').textContent=n+' supplementary mapping(s) applied and saved. Click Compare supplementary.';
+});
 el('compareSuppBtn').addEventListener('click',compareSupplementary);
 el('suppApply').addEventListener('click',applySelectedSupplementary);
 el('suppAcceptAll').addEventListener('click',()=>{document.querySelectorAll('[data-supp-group]').forEach(x=>{x.checked=true;x.indeterminate=false});document.querySelectorAll('[data-supp-accept]').forEach(x=>x.checked=true);document.querySelectorAll('.supp-change').forEach(x=>x.classList.remove('supp-ignored'));});
@@ -1910,6 +2059,7 @@ el('saleName').addEventListener('input',updateFilenamePreview);el('hideVendor').
 ['dragenter','dragover'].forEach(evt=>drop.addEventListener(evt,e=>{e.preventDefault();drop.classList.add('drag')}));
 ['dragleave','drop'].forEach(evt=>drop.addEventListener(evt,e=>{e.preventDefault();drop.classList.remove('drag')}));
 drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)handleFile(f)});
+renderMappingPanel([],[],'originalMappingPanel','originalMappingRows');
 updateFilenamePreview();
 })();
 </script>

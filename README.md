@@ -1,40 +1,30 @@
-# StockLive Dairy MLT Builder v6.5
+# StockLive Dairy MLT Builder v6.6
 
 Static browser-based Dairy MLT Builder for preparing NextLot MLT upload files.
 
 ## Package contents
 
 - `index.html` — live site file used by Netlify.
-- `Dairy_MLT_Builder_v6_5.html` — versioned backup/reference copy.
+- `Dairy_MLT_Builder_v6_6.html` — versioned backup/reference copy.
 - `netlify.toml` — publishes the repository root as a static Netlify site.
 - `README.md` — deployment notes.
 
 ## Upload to GitHub
 
-Upload all files in this folder to the root of the GitHub repository.
+Upload all four files to the root of the GitHub repository.
 
-For future updates:
-1. Replace `index.html` with the latest Dairy MLT Builder HTML.
-2. Add or replace the versioned backup HTML.
-3. Commit/push the changes to GitHub.
+If files with the same names already exist, replace the existing `index.html` and update the other files as required, then commit the changes.
 
-## Deploy to Netlify from GitHub
+## Netlify
 
-If your Netlify site is already connected to this GitHub repository, committing the updated files should trigger a redeploy.
+If Netlify is already connected to the GitHub repository, committing the updated files should trigger a redeploy automatically.
 
-For a new Netlify site:
-1. Choose **Add new site** / **Import an existing project**.
-2. Connect the GitHub repository.
-3. No build command is required.
-4. Publish directory: `.`
-5. Deploy.
+No build command is required.
 
-## Manual Netlify deploy
-
-Unzip this package and drag the folder into Netlify's manual deploy area.
+Publish directory: `.`
 
 ## Notes
 
-The builder is a static browser application and loads SheetJS from its CDN.
+Saved column mappings are stored in browser local storage. Deploying a newer builder version does not move mappings between different browsers or devices.
 
-Saved column mappings are stored in the browser's local storage. They stay with that browser/device unless recreated there.
+Use `Download Current Mapping Excel` inside the builder to review the current mapping configuration.
