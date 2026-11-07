@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Dairy MLT Builder v6.6</title>
+<title>Dairy MLT Builder v6.7</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{--navy:#082444;--orange:#f28c28;--ink:#172033;--muted:#6b7280;--line:#d9dee7;--bg:#f5f7fa;--good:#0f7b49;--bad:#b42318;--soft:#f8fafc}
@@ -120,14 +120,14 @@ h1{margin:0;color:var(--navy);font-size:29px}.version{font-size:13px;color:var(-
 <div class="wrap">
   <div class="header">
     <div><h1>Dairy MLT Builder</h1><div class="small">Converts a dairy catalogue spreadsheet into a NextLot MLT upload file.</div></div>
-    <div class="version">v6.6</div>
+    <div class="version">v6.7</div>
   </div>
 
   <div class="card instructions">
     <strong>Output columns:</strong> Lot #, Lot Name, Description, Quantity, Starting bid and Reserve Price.<br>    <strong>Vendor / A/C:</strong> use the checkbox to hide this line from the NextLot preview and downloaded MLT when required.<br>    <strong>Supplementary updates:</strong> upload an update sheet after the sale catalogue, compare only the changed nonblank fields, then accept or ignore each proposed update before applying it.<br>
     <strong>Column mapping:</strong> unrecognised populated headings can be mapped to an existing Dairy field or created as a new field and positioned in the MLT. Mappings are saved in this browser for later files. The Current Mapping Excel export lists each MLT heading, where it displays, and every recognised or saved source-column variation underneath that MLT field.<br>
     <strong>Herdbook links:</strong> after the catalogue is loaded, upload a Herdbook link file to add a <strong>Pedigree &amp; ABV Link</strong> button to matching lots. Exact Herdbook matches are cross-checked against Animal Name. Missing/different names or review statuses are flagged <strong>To Check</strong>; these can be confirmed individually or all at once before the link is added.<br>
-    <strong>Lot Name</strong> uses the source Name column when present. Older files without Name continue to use Tag + animal ID followed by Type. The description includes Vendor, Class, Attribute, Herdbook, DOB, Ltrs/Day, Total Ltrs, Calving Date, Joining, Calved, Due and Mated Sire. Lot Notes appear above the pedigree with a blank row above and below. Only Sire and Dam show initially; any additional Sire or Dam generations are available under the Pedigree button. Tables remain below the pedigree. Breed is currently hidden. A2/A2 and Polled are extracted from Class, while Beta-Casein and Horn values are also shown under Attribute. Calving Date appears in the lot details directly below DOB; a heading of Calved also appears in the lot details. Production Age, Days, Milk, Fat, Fat %, Pro, Pro % and Solids are combined into one production table. Production Age is kept as a numeric year-month code (for example 2-4 or 2-11), even when Excel displays the uploaded value as 2-Apr or 2-Nov. All displayed dates — including DOB/Birth Date, Calving Date, Calved, Joining and Due — are shown as DD/MM/YYYY and are never displayed month-first.<br>
+    <strong>Lot Name</strong> uses the source Name column when present. Older files without Name continue to use Tag + animal ID followed by Type. The description includes Vendor, Class, Attribute, Herdbook, DOB, Ltrs/Day, Total Ltrs, Calving Date, Joining, Calved, Due and Mated Sire. Lot Notes appear above the pedigree with a blank row above and below. Only Sire and Dam show initially; any additional Sire or Dam generations are available under the Pedigree button. Tables remain below the pedigree. Breed is currently hidden. A2/A2 and Polled are extracted from Class, while Beta-Casein and Horn values are also shown under Attribute. Calving Date appears in the lot details directly below DOB; Calved appears above Joining. Production Age, Days, Milk, Fat, Fat %, Pro, Pro % and Solids are combined into one production table. Production Age is kept as a numeric year-month code (for example 2-4 or 2-11), even when Excel displays the uploaded value as 2-Apr or 2-Nov. All displayed dates — including DOB/Birth Date, Calving Date, Calved, Joining and Due — are shown as DD/MM/YYYY and are never displayed month-first.<br>
     Rows are sorted into Lot # order before preview and export. Blank/non-animal rows are ignored. If a future file has no lot-number column, output lot numbers are created sequentially. Like the Beef MLT Builder, descriptions are automatically padded to a minimum of 8 visible rows. Only the missing blank rows are added at the bottom, and descriptions already at 8 or more rows are left unchanged.
   </div>
 
@@ -1428,8 +1428,8 @@ function detailBlock(row){
     ['Herdbook','HERDBOOK'],
     ['DOB','DOB'],
     ['Calving Date','CALVING_DATE'],
-    ['Joining','JOINING'],
     ['Calved','CALVED'],
+    ['Joining','JOINING'],
     ['Due','DUE'],
     ['Mated Sire','MATED_SIRE']
   ];
