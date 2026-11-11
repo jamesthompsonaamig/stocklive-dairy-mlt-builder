@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Dairy MLT Builder v6.8</title>
+<title>Dairy MLT Builder v6.9</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{--navy:#082444;--orange:#f28c28;--ink:#172033;--muted:#6b7280;--line:#d9dee7;--bg:#f5f7fa;--good:#0f7b49;--bad:#b42318;--soft:#f8fafc}
@@ -121,7 +121,7 @@ h1{margin:0;color:var(--navy);font-size:29px}.version{font-size:13px;color:var(-
 <div class="wrap">
   <div class="header">
     <div><h1>Dairy MLT Builder</h1><div class="small">Converts a dairy catalogue spreadsheet into a NextLot MLT upload file.</div></div>
-    <div class="version">v6.8</div>
+    <div class="version">v6.9</div>
   </div>
 
   <div class="card instructions">
@@ -152,7 +152,7 @@ h1{margin:0;color:var(--navy);font-size:29px}.version{font-size:13px;color:var(-
 
     <div id="drop" class="drop">
       <div style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:6px">Upload Dairy Sale Catalogue File</div>
-      <div class="small">CSV, XLSX or XLS — reads animal details, breeding details, Last Lact Age (Months), Last Lact Milk, Last Lact Protein, Last Lact Fat, Last Lact Days, SCC, BPI, ASI, HWI, GLPI, OT, MS, Mam, Fert and standard production fields including F&PPI. Ltrs/Day, Total Ltrs, CC/Cell Count, Solids and SC are shown together in a separate table above the production table. The production table keeps Age, Milk, Fat, Fat %, Pro and Pro % together, followed by Days, F&PPI and Solids. Any populated column that is not recognised will be flagged after upload so it can be mapped.</div>
+      <div class="small">CSV, XLSX or XLS — reads animal details, breeding details, Last Lact Age (Months), Last Lact Milk, Last Lact Protein, Last Lact Fat, Last Lact Days, SCC, BPI, ASI, HWI, GLPI, OT, MS, Mam, Fert and standard production fields including F&PPI. Ltrs/Day, Total Ltrs, CC/Cell Count, Solids and SC are shown together in a separate table above the production table. The production table keeps Age, Milk, Fat, Fat %, Pro and Pro % together, followed by Days, F&PPI and Solids. Any populated column that is not recognised will be flagged after upload so it can be mapped. The builder will also accept a likely catalogue header with Lot plus several populated headings, even when some headings are unfamiliar.</div>
       <div style="margin-top:15px"><label class="btn btn-primary" for="fileInput">Choose file</label></div>
       <input id="fileInput" type="file" accept=".csv,.xlsx,.xls">
       <div id="fileName" class="file-name"></div>
@@ -289,7 +289,7 @@ function saveColumnMappings(){
 
 const aliases={
   LOT:['LOT','LOT NO','LOT #','LOT NUMBER','LOTNO'],
-  NAME:['NAME','LOT NAME','ANIMAL NAME'],
+  NAME:['NAME','LOT NAME','ANIMAL NAME','COWS LONG NAME'],
   ID:['ID','TAG','ANIMAL ID','COW ID','COW NO','COW NUMBER'],
   VID:['VID','VISUAL ID','VISUAL IDENT','VISUAL IDENTIFIER'],
   DOB:['DOB','DATE OF BIRTH','BIRTH DATE'],
@@ -305,7 +305,7 @@ const aliases={
   JOINING:['JOINING','JOINED','JOINING DATE'],
   DUE:['DUE','DUE DATE'],
   CALVING_DATE:['CALVING DATE'],
-  CALVED:['CALVED','DATE CALVED'],
+  CALVED:['CALVED','DATE CALVED','LAST CALVING'],
   LTRS_DAY:['LTRS/DAY','LTRS / DAY','LTRS DAY','LITRES/DAY','LITRES / DAY','LITRES DAY','LITERS/DAY','LITERS / DAY'],
   TOTAL_LTRS:['TOTAL LTRS','TOTAL LITRES','TOTAL LITERS','LTRS TO DATE','LITRES TO DATE','LITERS TO DATE'],
   SC:['SC','S.C.'],
@@ -1136,14 +1136,38 @@ function stripVendorAccountLine(raw){
   return s;
 }
 function findHeaderRow(rows){
-  let best=-1,bestScore=-1;
+  let best=-1,bestScore=-1,bestRecognised=0,bestHasLot=false,bestNonblank=0;
   for(let i=0;i<Math.min(rows.length,30);i++){
-    const h=(rows[i]||[]).map(normalizeHeader);
-    let score=0;
-    (rows[i]||[]).forEach(x=>{if(canonicalKeyForHeader(x))score++;});
-    if(score>bestScore){bestScore=score;best=i;}
+    const raw=rows[i]||[];
+    const recognised=raw.filter(x=>canonicalKeyForHeader(x)).length;
+    const hasLot=raw.some(x=>canonicalKeyForHeader(x)==='LOT');
+    const nonblank=raw.filter(x=>clean(x)!=='').length;
+
+    // Strongly favour recognised Dairy headings, but also give a useful boost
+    // to rows containing Lot plus several other populated headings so unfamiliar
+    // catalogues can load and be taught through the mapping section.
+    const score=recognised*10+(hasLot?12:0)+Math.min(nonblank,12);
+
+    if(score>bestScore){
+      bestScore=score;
+      best=i;
+      bestRecognised=recognised;
+      bestHasLot=hasLot;
+      bestNonblank=nonblank;
+    }
   }
-  return bestScore>=4?best:-1;
+
+  if(best<0)return -1;
+
+  // Existing behaviour: four or more recognised headings is always enough.
+  if(bestRecognised>=4)return best;
+
+  // More tolerant path: if we have a Lot heading plus at least five populated
+  // columns and at least two recognised fields, allow the sheet to load so the
+  // remaining headings can be mapped.
+  if(bestHasLot && bestRecognised>=2 && bestNonblank>=5)return best;
+
+  return -1;
 }
 // Do not rely on formatted Excel date text for DOB: that text can be
 // month/day/year even when the underlying date is correct. Read the original
